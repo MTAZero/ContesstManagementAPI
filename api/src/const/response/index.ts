@@ -6,6 +6,7 @@ export const ResponseCode = {
   ERROR: 500,
   BAD_REQUEST: 400,
   FORBIDDEN: 403,
+  CONFLICT: 400
 };
 
 export const ResponseMessage = {

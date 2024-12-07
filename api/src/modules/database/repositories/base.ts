@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { Model, Document } from 'mongoose';
+import { Injectable } from "@nestjs/common";
+import { Model, Document } from "mongoose";
 import {
   IBaseDBService,
   QueryParams,
   ResponseQuery,
-} from 'src/interface/i-base-db-service';
+} from "src/interface/i-base-db-service";
 
 @Injectable()
 export class BaseDBService<T extends Document> implements IBaseDBService<T> {
@@ -12,9 +12,11 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
 
   async getItems(query: QueryParams): Promise<ResponseQuery<T>> {
     let { sort, filter } = query;
-    const { textSearch, skip, limit } = query;
+    let { textSearch, skip, limit } = query;
 
-    if (textSearch && textSearch !== '')
+    if (limit === 0) limit = 1000;
+
+    if (textSearch && textSearch !== "")
       filter = {
         ...filter,
         ...{
@@ -57,7 +59,7 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
         $match: filter,
       },
       {
-        $count: 'total',
+        $count: "total",
       },
     ]);
 
@@ -84,7 +86,7 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
         {
           _id: id,
         },
-        entity,
+        entity
       )
       .exec();
 
@@ -92,17 +94,13 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
   }
 
   async removeItem(id: any): Promise<boolean> {
-    try {
-      await this.model
-        .deleteOne({
-          _id: id,
-        })
-        .exec();
+    await this.model
+      .deleteOne({
+        _id: id,
+      })
+      .exec();
 
-      return true;
-    } catch (ex: any) {
-      return false;
-    }
+    return true;
   }
 
   async insertItem(entity: any): Promise<any> {
@@ -124,12 +122,8 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
   }
 
   async removeMany(query: object = {}): Promise<boolean> {
-    try {
-      await this.model.deleteMany(query).exec();
-      return true;
-    } catch (ex: any) {
-      return false;
-    }
+    await this.model.deleteMany(query).exec();
+    return true;
   }
 
   async updateMany(query: object = {}, entity: any) {
@@ -145,7 +139,7 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
           $match: filter,
         },
         {
-          $count: 'total',
+          $count: "total",
         },
       ])
       .exec();
