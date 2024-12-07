@@ -31,6 +31,7 @@ import { Types } from "mongoose";
 import { ObjectId } from "mongodb";
 import { UserChoicesRepository } from "../database/repositories/user_choices.repository";
 import { AnswerRepository } from "../database/repositories/answers.repository";
+import { UserRepository } from "../database/repositories/users.repository";
 
 @Controller("contests")
 export class ContestsController {
@@ -51,6 +52,62 @@ export class ContestsController {
 
   @Inject(AnswerRepository)
   answersRepository: AnswerRepository;
+
+  @Inject(UserRepository)
+  usersRepository: UserRepository;
+
+  // kết quả các cuộc thi đã thi xong
+  @Get("/completed")
+  @UseGuards(JwtAuthGuard)
+  async getCompletedContests(@CurrentUser() user: any, @Res() res) {
+    try {
+      const now = new Date();
+
+      // Lấy danh sách cuộc thi đã hoàn thành
+      const completedContests = await this.userContestRepository.getItems({
+        skip: 0,
+        limit: 1000,
+        filter: {
+          user: user._id,
+          is_submitted: true, // Đã nộp bài
+        },
+        sort: { created_date: -1 }, // Sắp xếp theo thời gian gần nhất
+      });
+
+      const contestIds = completedContests.items.map((item) => item.contest);
+
+      // Lấy chi tiết các cuộc thi
+      const contests = await this.contestsRepository.getItems({
+        skip: 0,
+        limit: 1000,
+        filter: { _id: { $in: contestIds } }, // Đã kết thúc
+      });
+
+      const results = completedContests.items.map((entry) => ({
+        ...entry,
+        contest_detail: contests.items.find(
+          (contest) => contest._id.toString() === entry.contest.toString()
+        ),
+      }));
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Completed contests fetched successfully",
+        results
+      );
+    } catch (error) {
+      console.error("Error fetching completed contests:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to fetch completed contests",
+        null
+      );
+    }
+  }
 
   // lấy danh sách các cuộc thi sắp tới đã đăng ký
   @Get("/upcoming-registered")
@@ -425,7 +482,7 @@ export class ContestsController {
       const results = await Promise.all(
         questions.items.map(async (question) => {
           return this.questionContestsRepository.insertItem({
-            contest: contestId,
+            contest: new ObjectId(contestId),
             question: question._id,
           });
         })
@@ -463,8 +520,8 @@ export class ContestsController {
   ) {
     try {
       const result = await this.questionContestsRepository.removeMany({
-        contest: contestId,
-        question: questionId,
+        contest: new ObjectId(contestId),
+        question: new ObjectId(questionId),
       });
 
       return ApiResponse(
@@ -495,7 +552,7 @@ export class ContestsController {
     try {
       // Xóa toàn bộ câu hỏi liên kết với contestId
       const result = await this.questionContestsRepository.removeMany({
-        contest: contestId,
+        contest: new ObjectId(contestId),
       });
 
       return ApiResponse(
@@ -794,15 +851,15 @@ export class ContestsController {
       const contestData = contest.items[0];
 
       // Kiểm tra thời gian bắt đầu
-      if (now < new Date(contestData.start_time)) {
-        return ApiResponse(
-          res,
-          false,
-          ResponseCode.FORBIDDEN,
-          "Contest has not started yet",
-          null
-        );
-      }
+      // if (now < new Date(contestData.start_time)) {
+      //   return ApiResponse(
+      //     res,
+      //     false,
+      //     ResponseCode.FORBIDDEN,
+      //     "Contest has not started yet",
+      //     null
+      //   );
+      // }
 
       // Kiểm tra thời gian kết thúc
       if (now > new Date(contestData.end_time)) {
@@ -928,7 +985,7 @@ export class ContestsController {
       const registration = await this.userContestRepository.getItems({
         skip: 0,
         limit: 1,
-        filter: { contest: contestId, user: user._id },
+        filter: { contest: new ObjectId(contestId), user: user._id },
       });
 
       if (!registration.items.length) {
@@ -1183,6 +1240,57 @@ export class ContestsController {
         false,
         ResponseCode.ERROR,
         "Failed to fetch contest result",
+        null
+      );
+    }
+  }
+
+  // leader board của q cuộc thi
+  @Get("/:contestId/leaderboard")
+  @UseGuards(JwtAuthGuard)
+  async getLeaderboard(@Param("contestId") contestId: string, @Res() res) {
+    try {
+      // Lấy danh sách các user đã tham gia và nộp bài
+      const userResults = await this.userContestRepository.getItems({
+        skip: 0,
+        limit: 1000,
+        filter: {
+          contest: new ObjectId(contestId),
+          is_submitted: true,
+        },
+        sort: { result: -1 }, // Sắp xếp theo điểm số giảm dần
+      });
+
+      // Lấy chi tiết user
+      const userIds = userResults.items.map((item) => item.user);
+      const users = await this.usersRepository.getItems({
+        skip: 0,
+        limit: 1000,
+        filter: { _id: { $in: userIds } },
+      });
+
+      const leaderboard = userResults.items.map((entry, index) => ({
+        rank: index + 1,
+        user: users.items.find(
+          (user) => user._id.toString() === entry.user.toString()
+        ),
+        score: entry.result,
+      }));
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Leaderboard fetched successfully",
+        leaderboard
+      );
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to fetch leaderboard",
         null
       );
     }
