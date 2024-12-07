@@ -205,7 +205,7 @@ export class ContestsController {
       // Lấy danh sách các cuộc thi mà user đã đăng ký
       const registrations = await this.userContestRepository.getItems({
         skip: 0,
-        limit: 1, // Lấy toàn bộ
+        limit: 1000, // Lấy toàn bộ
         filter: {
           user: user._id,
         },
