@@ -158,8 +158,6 @@ export class QuestionsController {
   @UseInterceptors(FileInterceptor("file", multerOptions))
   async importQuestions(@UploadedFile() file: UploadedMulterFile, @Res() res) {
     try {
-      console.log("Uploaded File:", file);
-
       // Kiểm tra nếu không có file được tải lên
       if (!file || !file.path) {
         return ApiResponse(
@@ -270,8 +268,6 @@ export class QuestionsController {
     @Res() res
   ) {
     try {
-      console.log("Uploaded File:", file);
-
       // Kiểm tra nếu không có file được tải lên
       if (!file || !file.path) {
         return ApiResponse(

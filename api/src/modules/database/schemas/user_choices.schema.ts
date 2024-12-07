@@ -1,9 +1,10 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import { User } from './users.schema';
-import { Contest } from './contests.schema';
-import { Question } from './questions.schema';
-import { QuestionContest } from './question_contest.schema';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types } from "mongoose";
+import { User } from "./users.schema";
+import { Contest } from "./contests.schema";
+import { Question } from "./questions.schema";
+import { QuestionContest } from "./question_contest.schema";
+import { Answer } from "./answers.schema";
 
 @Schema()
 export class UserChoice extends Document<any> {
@@ -20,6 +21,10 @@ export class UserChoice extends Document<any> {
   // Tham chiếu đến Question
   @Prop({ type: Types.ObjectId, ref: Question.name, required: true })
   question: Types.ObjectId;
+
+  // Tham chiếu đến Answer
+  @Prop({ type: Types.ObjectId, ref: Answer.name, required: true })
+  answer: Types.ObjectId;
 
   // ID lựa chọn của người dùng (ví dụ: câu trả lời hoặc lựa chọn trong câu hỏi)
   @Prop()

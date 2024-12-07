@@ -28,6 +28,9 @@ import { QuestionsRepository } from "../database/repositories/questions.resposit
 import { JwtAuthGuard } from "../authentication/guards/jwt-auth.guard";
 import { UserContestRepository } from "../database/repositories/user_contest.repository";
 import { Types } from "mongoose";
+import { ObjectId } from "mongodb";
+import { UserChoicesRepository } from "../database/repositories/user_choices.repository";
+import { AnswerRepository } from "../database/repositories/answers.repository";
 
 @Controller("contests")
 export class ContestsController {
@@ -42,6 +45,12 @@ export class ContestsController {
 
   @Inject(UserContestRepository)
   userContestRepository: UserContestRepository;
+
+  @Inject(UserChoicesRepository)
+  userChoiceRepository: UserChoicesRepository;
+
+  @Inject(AnswerRepository)
+  answersRepository: AnswerRepository;
 
   // lấy danh sách các cuộc thi sắp tới đã đăng ký
   @Get("/upcoming-registered")
@@ -60,8 +69,6 @@ export class ContestsController {
           user: user._id,
         },
       });
-
-      console.log(registeredContests);
 
       // Lấy danh sách ID các cuộc thi đã đăng ký
       const contestIds = registeredContests.items.map((item) => item.contest);
@@ -141,7 +148,7 @@ export class ContestsController {
       // Lấy danh sách các cuộc thi mà user đã đăng ký
       const registrations = await this.userContestRepository.getItems({
         skip: 0,
-        limit: 0, // Lấy toàn bộ
+        limit: 1, // Lấy toàn bộ
         filter: {
           user: user._id,
         },
@@ -348,8 +355,8 @@ export class ContestsController {
       const results = await Promise.all(
         questionIds.map(async (questionId) => {
           return this.questionContestsRepository.insertItem({
-            contest: contestId,
-            question: questionId,
+            contest: new ObjectId(contestId),
+            question: new ObjectId(questionId),
           });
         })
       );
@@ -579,7 +586,7 @@ export class ContestsController {
         skip: 0,
         limit: 1,
         filter: {
-          contest: contestId,
+          contest: new ObjectId(contestId),
           user: user._id,
         },
       });
@@ -595,7 +602,7 @@ export class ContestsController {
       }
 
       const result = await this.userContestRepository.insertItem({
-        contest: contestId,
+        contest: new ObjectId(contestId),
         user: user._id,
       });
 
@@ -657,7 +664,7 @@ export class ContestsController {
         skip: 0,
         limit: 1,
         filter: {
-          contest: contestId,
+          contest: new ObjectId(contestId),
           user: user._id,
         },
       });
@@ -673,7 +680,7 @@ export class ContestsController {
       }
 
       const result = await this.userContestRepository.removeMany({
-        contest: contestId,
+        contest: new ObjectId(contestId),
         user: user._id,
       });
 
@@ -722,7 +729,7 @@ export class ContestsController {
       const registrations = await this.userContestRepository.getItems({
         skip: Number(skip), // Bỏ qua số bản ghi
         limit: Number(limit), // Số bản ghi cần lấy
-        filter: { contest: contestId }, // Lọc theo contestId
+        filter: { contest: new ObjectId(contestId) }, // Lọc theo contestId
         sort: { created_date: -1 }, // Sắp xếp theo ngày đăng ký giảm dần
       });
 
@@ -750,6 +757,432 @@ export class ContestsController {
         false,
         ResponseCode.ERROR,
         "Failed to fetch registrations",
+        null
+      );
+    }
+  }
+
+  @Post("/:contestId/enter")
+  @UseGuards(JwtAuthGuard)
+  async enterContest(
+    @Param("contestId") contestId: string,
+    @CurrentUser() user: any,
+    @Res() res
+  ) {
+    try {
+      const now = new Date();
+
+      // Lấy thông tin cuộc thi
+      const contest = await this.contestsRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: {
+          _id: new ObjectId(contestId),
+        },
+      });
+
+      if (!contest.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.NOT_FOUND,
+          "Contest not found",
+          null
+        );
+      }
+
+      const contestData = contest.items[0];
+
+      // Kiểm tra thời gian bắt đầu
+      if (now < new Date(contestData.start_time)) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "Contest has not started yet",
+          null
+        );
+      }
+
+      // Kiểm tra thời gian kết thúc
+      if (now > new Date(contestData.end_time)) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "Contest has already ended",
+          null
+        );
+      }
+
+      // Kiểm tra xem user đã đăng ký chưa
+      const registration = await this.userContestRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { contest: new ObjectId(contestId), user: user._id },
+      });
+
+      if (!registration.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "You are not registered for this contest",
+          null
+        );
+      }
+
+      // Lấy danh sách câu hỏi
+      const questions =
+        await this.questionContestsRepository.getQuestionsByContest(contestId);
+
+      // Lấy danh sách lựa chọn hiện tại của user
+      const userChoices = await this.userChoiceRepository.getItems({
+        skip: 0,
+        limit: 1000,
+        filter: {
+          contest: new ObjectId(contestId),
+          user: user._id,
+        },
+      });
+
+      // Tạo map để tra cứu câu trả lời của user
+      const userChoicesMap = new Map(
+        userChoices.items.map((choice) => [choice.question.toString(), choice])
+      );
+
+      // Xáo trộn thứ tự câu hỏi và đáp án
+      const shuffledQuestions = questions.items.map((question, index) => ({
+        ...question,
+        pos: index + 1,
+        answers: question.answers
+          .sort(() => Math.random() - 0.5)
+          .map((answer) => ({
+            _id: answer._id,
+            content: answer.content,
+          })),
+        user_choice: userChoicesMap.get(question.question.toString()) || null, // Thêm lựa chọn hiện tại của user
+      }));
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Entered contest and questions fetched successfully",
+        shuffledQuestions
+      );
+    } catch (error) {
+      console.error("Error entering contest:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to enter contest",
+        null
+      );
+    }
+  }
+
+  // user cập nhật lựa chọn
+  @Post("/:contestId/question/:questionId/answer")
+  @UseGuards(JwtAuthGuard)
+  async updateAnswer(
+    @Param("contestId") contestId: string,
+    @Param("questionId") questionId: string,
+    @CurrentUser() user: any,
+    @Body() body: { answerId: string },
+    @Res() res
+  ) {
+    try {
+      const now = new Date();
+
+      // Lấy thông tin cuộc thi
+      const contest = await this.contestsRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { _id: new ObjectId(contestId) },
+      });
+
+      if (!contest.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.NOT_FOUND,
+          "Contest not found",
+          null
+        );
+      }
+
+      // Kiểm tra xem cuộc thi đã kết thúc hay chưa
+      if (now > new Date(contest.items[0].end_time)) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "Contest has ended",
+          null
+        );
+      }
+
+      // Kiểm tra xem user đã đăng ký chưa
+      const registration = await this.userContestRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { contest: contestId, user: user._id },
+      });
+
+      if (!registration.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "You are not registered for this contest",
+          null
+        );
+      }
+
+      // Lấy thông tin `question_contest`
+      const questionContest = await this.questionContestsRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: {
+          contest: new ObjectId(contestId),
+          question: new ObjectId(questionId),
+        },
+      });
+
+      if (!questionContest.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.NOT_FOUND,
+          "Question is not part of this contest",
+          null
+        );
+      }
+
+      const questionContestId = questionContest.items[0]._id;
+
+      // Kiểm tra xem đã tồn tại câu trả lời hay chưa
+      const existingChoice = await this.userChoiceRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { question_contest: questionContestId, user: user._id },
+      });
+
+      let result;
+      if (existingChoice.items.length) {
+        // Cập nhật lựa chọn nếu đã tồn tại
+        result = await this.userChoiceRepository.updateItem(
+          existingChoice.items[0]._id,
+          {
+            answer: body.answerId,
+          }
+        );
+      } else {
+        // Tạo mới nếu chưa có
+        result = await this.userChoiceRepository.insertItem({
+          question_contest: questionContestId,
+          contest: new ObjectId(contestId),
+          question: new ObjectId(questionId),
+          user: user._id,
+          answer: new ObjectId(body.answerId),
+        });
+      }
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Answer saved successfully",
+        result
+      );
+    } catch (error) {
+      console.error("Error updating answer:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to save answer",
+        null
+      );
+    }
+  }
+
+  // user nộp bài và tính điểm cho user
+  @Post("/:contestId/submit")
+  @UseGuards(JwtAuthGuard)
+  async submitContest(
+    @Param("contestId") contestId: string,
+    @CurrentUser() user: any,
+    @Res() res
+  ) {
+    try {
+      const now = new Date();
+
+      // Lấy thông tin cuộc thi
+      const contest = await this.contestsRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { _id: new ObjectId(contestId) },
+      });
+
+      if (!contest.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.NOT_FOUND,
+          "Contest not found",
+          null
+        );
+      }
+
+      const contestData = contest.items[0];
+
+      // Kiểm tra thời gian kết thúc
+      // if (now < new Date(contestData.end_time)) {
+      //   return ApiResponse(
+      //     res,
+      //     false,
+      //     ResponseCode.FORBIDDEN,
+      //     "You cannot submit before the contest ends",
+      //     null
+      //   );
+      // }
+
+      // Lấy thông tin đăng ký của user
+      const registration = await this.userContestRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { contest: new ObjectId(contestId), user: user._id },
+      });
+
+      if (!registration.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "You are not registered for this contest",
+          null
+        );
+      }
+
+      const userRegistration = registration.items[0];
+
+      // Kiểm tra xem đã nộp bài hay chưa
+      if (userRegistration.is_submitted) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "You have already submitted the contest",
+          null
+        );
+      }
+
+      // Lấy câu trả lời của user
+      const userChoices = await this.userChoiceRepository.getItems({
+        skip: 0,
+        limit: 1000,
+        filter: { contest: new ObjectId(contestId), user: user._id },
+      });
+
+      let score = 0;
+
+      // Tính điểm dựa trên câu trả lời đúng
+      for (const choice of userChoices.items) {
+        const correctAnswer = await this.answersRepository.getItems({
+          skip: 0,
+          limit: 1,
+          filter: { question: choice.question, is_correct: true },
+        });
+
+        if (
+          correctAnswer.items.length &&
+          correctAnswer.items[0]._id.toString() === choice.answer.toString()
+        ) {
+          score++;
+        }
+      }
+
+      // Cập nhật trạng thái nộp bài
+      await this.userContestRepository.updateItem(userRegistration._id, {
+        is_submitted: true,
+        result: score,
+      });
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Contest submitted successfully",
+        { score }
+      );
+    } catch (error) {
+      console.error("Error submitting contest:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to submit contest",
+        null
+      );
+    }
+  }
+
+  // kết quả của user
+  @Get("/:contestId/result")
+  @UseGuards(JwtAuthGuard)
+  async getContestResult(
+    @Param("contestId") contestId: string,
+    @CurrentUser() user: any,
+    @Res() res
+  ) {
+    try {
+      // Lấy thông tin đăng ký của user
+      const registration = await this.userContestRepository.getItems({
+        skip: 0,
+        limit: 1,
+        filter: { contest: new ObjectId(contestId), user: user._id },
+      });
+
+      if (!registration.items.length) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.NOT_FOUND,
+          "You are not registered for this contest",
+          null
+        );
+      }
+
+      const userRegistration = registration.items[0];
+
+      // Kiểm tra xem user đã nộp bài chưa
+      if (!userRegistration.is_submitted) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "You have not submitted the contest yet",
+          null
+        );
+      }
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Contest result fetched successfully",
+        { score: userRegistration.result }
+      );
+    } catch (error) {
+      console.error("Error fetching contest result:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to fetch contest result",
         null
       );
     }
