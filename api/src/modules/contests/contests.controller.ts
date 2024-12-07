@@ -23,11 +23,19 @@ import { AdminGuard } from "../authentication/guards/admin-auth.guard";
 import { ContestsRepository } from "../database/repositories/contests.repository";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { CurrentUser } from "src/decorator/current-user.decorator";
+import { QuestionContestsRepository } from "../database/repositories/question_contests.repository";
+import { QuestionsRepository } from "../database/repositories/questions.respository";
 
 @Controller("contests")
 export class ContestsController {
   @Inject(ContestsRepository)
   contestsRepository: ContestsRepository;
+
+  @Inject(QuestionContestsRepository)
+  questionContestsRepository: QuestionContestsRepository;
+
+  @Inject(QuestionsRepository)
+  questionsRepository: QuestionsRepository;
 
   @Get("/")
   @UseGuards(AdminGuard)
@@ -137,5 +145,234 @@ export class ContestsController {
       ResponseMessage.SUCCESS,
       contestDetail
     );
+  }
+
+  // Thêm một số câu hỏi vào contest
+  @Post("/:contestId/questions")
+  @UseGuards(AdminGuard)
+  async addQuestionsToContest(
+    @Param("contestId") contestId: string,
+    @Body("questionIds") questionIds: string[],
+    @Res() res
+  ) {
+    try {
+      const contest = await this.contestsRepository.getItemById(contestId);
+      if (!contest) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.ERROR,
+          `Contest ${contestId} not found`,
+          null
+        );
+      }
+
+      const now = new Date();
+      const allowedTime = new Date(contest.start_time);
+      allowedTime.setMinutes(allowedTime.getMinutes() - 15);
+
+      if (now > allowedTime) {
+        return ApiResponse(
+          res,
+          false,
+          "FORBIDDEN",
+          "Cannot add questions within 15 minutes of contest start time",
+          null
+        );
+      }
+
+      const results = await Promise.all(
+        questionIds.map(async (questionId) => {
+          return this.questionContestsRepository.insertItem({
+            contest: contestId,
+            question: questionId,
+          });
+        })
+      );
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        `${results.length} questions added to contest successfully`,
+        results
+      );
+    } catch (error) {
+      console.error("Error adding questions to contest:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to add questions to contest",
+        null
+      );
+    }
+  }
+
+  // Thêm tất cả câu hỏi từ một category vào contest
+  @Post("/:contestId/category/:categoryId")
+  @UseGuards(AdminGuard)
+  async addCategoryQuestionsToContest(
+    @Param("contestId") contestId: string,
+    @Param("categoryId") categoryId: string,
+    @Res() res
+  ) {
+    try {
+      const contest = await this.contestsRepository.getItemById(contestId);
+      if (!contest) {
+        return ApiResponse(
+          res,
+          false,
+          "NOT_FOUND",
+          `Contest ${contestId} not found`,
+          null
+        );
+      }
+
+      const now = new Date();
+      const allowedTime = new Date(contest.start_time);
+      allowedTime.setMinutes(allowedTime.getMinutes() - 15);
+
+      if (now > allowedTime) {
+        return ApiResponse(
+          res,
+          false,
+          "FORBIDDEN",
+          "Cannot add category questions within 15 minutes of contest start time",
+          null
+        );
+      }
+
+      const questions = await this.questionsRepository.getItems({
+        filter: { category: categoryId },
+        sort: {},
+        skip: 0,
+        limit: 1000,
+        textSearch: "",
+      });
+
+      const results = await Promise.all(
+        questions.items.map(async (question) => {
+          return this.questionContestsRepository.insertItem({
+            contest: contestId,
+            question: question._id,
+          });
+        })
+      );
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        `${results.length} questions from category ${categoryId} added to contest successfully`,
+        results
+      );
+    } catch (error) {
+      console.error(
+        "Error adding category questions to contest:",
+        error.message
+      );
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to add category questions to contest",
+        null
+      );
+    }
+  }
+
+  // Xóa câu hỏi khỏi contest
+  @Delete("/:contestId/questions/:questionId")
+  @UseGuards(AdminGuard)
+  async removeQuestionFromContest(
+    @Param("contestId") contestId: string,
+    @Param("questionId") questionId: string,
+    @Res() res
+  ) {
+    try {
+      const result = await this.questionContestsRepository.removeMany({
+        contest: contestId,
+        question: questionId,
+      });
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        `Question ${questionId} removed from contest ${contestId} successfully`,
+        result
+      );
+    } catch (error) {
+      console.error("Error removing question from contest:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to remove question from contest",
+        null
+      );
+    }
+  }
+
+  @Delete("/:contestId/questions")
+  @UseGuards(AdminGuard)
+  async removeAllQuestionsFromContest(
+    @Param("contestId") contestId: string,
+    @Res() res
+  ) {
+    try {
+      // Xóa toàn bộ câu hỏi liên kết với contestId
+      const result = await this.questionContestsRepository.removeMany({
+        contest: contestId,
+      });
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        `All questions removed from contest ${contestId} successfully`,
+        result
+      );
+    } catch (error) {
+      console.error("Error removing questions from contest:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to remove questions from contest",
+        null
+      );
+    }
+  }
+
+  // Lấy danh sách câu hỏi của contest
+  @Get("/:contestId/questions")
+  @UseGuards(AdminGuard)
+  async getQuestionsByContest(
+    @Param("contestId") contestId: string,
+    @Res() res
+  ) {
+    try {
+      const questions =
+        await this.questionContestsRepository.getQuestionsByContest(contestId);
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        `Questions fetched successfully for contest ${contestId}`,
+        questions
+      );
+    } catch (error) {
+      console.error("Error fetching questions by contest:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to fetch questions by contest",
+        null
+      );
+    }
   }
 }
