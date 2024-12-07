@@ -12,7 +12,7 @@ import {
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
-import { UserDBService } from '../database/repositories/users.repository';
+import { UserRepository } from '../database/repositories/users.repository';
 import { UpdateInfoDto } from './dtos/update-info.dto';
 import { ChangeMyPasswordDto } from './dtos/change-my-password.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -25,14 +25,14 @@ import { User } from '../database/schemas/users.schema';
 
 @Controller('authentication')
 export class AuthenticationController {
-  @Inject(UserDBService)
-  userDBService: UserDBService;
+  @Inject(UserRepository)
+  userRepository: UserRepository;
 
   @UseGuards(LocalAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @Post('login')
   async login(@Res() res, @Req() req) {
-    const ans = await this.userDBService.signTokenByUser(req.user);
+    const ans = await this.userRepository.signTokenByUser(req.user);
 
     return ApiResponse(
       res,
@@ -46,7 +46,7 @@ export class AuthenticationController {
   @UseGuards(JwtAuthGuard)
   @Get('/my-info')
   async handleGetMyInfo(@Req() req, @Res() res, @CurrentUser() user) {
-    const ans = (await this.userDBService.getFirstItem({ _id: user._id }))
+    const ans = (await this.userRepository.getFirstItem({ _id: user._id }))
     
     return ApiResponse(
       res,
@@ -60,7 +60,7 @@ export class AuthenticationController {
   @UseGuards(JwtAuthGuard)
   @Get('/check-token')
   async handleCheckToken(@Req() req, @Res() res, @CurrentUser() user) {
-    const ans = await this.userDBService.getFirstItem({ _id: user._id });
+    const ans = await this.userRepository.getFirstItem({ _id: user._id });
 
     return ApiResponse(
       res,
@@ -83,7 +83,7 @@ export class AuthenticationController {
     const id = req.userId;
     const update = { full_name: entity.full_name };
 
-    const ans = await this.userDBService.updateItem(id, update);
+    const ans = await this.userRepository.updateItem(id, update);
 
     return ApiResponse(
       res,
@@ -103,7 +103,7 @@ export class AuthenticationController {
     @Body(new ValidationPipe()) entity: ChangeMyPasswordDto,
     @CurrentUser() user: User,
   ) {
-    const result = await this.userDBService.changePassword(
+    const result = await this.userRepository.changePassword(
       user._id.toString(),
       entity.password,
       entity.new_password,

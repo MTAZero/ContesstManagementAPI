@@ -2,11 +2,11 @@ import { Inject, UnauthorizedException } from '@nestjs/common';
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
-import { UserDBService } from 'src/modules/database/services/userDBService';
+import { UserRepository } from 'src/modules/database/repositories/users.repository';
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  @Inject(UserDBService)
-  userDBService: UserDBService;
+  @Inject(UserRepository)
+  userRepository: UserRepository;
 
   constructor(private readonly _reflector: Reflector) {
     super();
@@ -20,7 +20,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = await this.userDBService.getItemById(request.user.userId);
+    const user = await this.userRepository.getItemById(request.user.userId);
     if (!user) return false;
 
     request.userId = user._id;

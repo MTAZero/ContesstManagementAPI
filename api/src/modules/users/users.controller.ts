@@ -79,7 +79,7 @@ export class UsersController {
 
   @Put('/:id')
   @UseInterceptors(FileInterceptor('file'))
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminGuard)
   async updateUser(
     @Body(new ValidationPipe()) entity: UpdateUserDto,
     @Res() res,
@@ -97,7 +97,7 @@ export class UsersController {
   }
 
   @Delete('/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminGuard)
   async removeUser(@Res() res, @Param() params) {
     const id = params.id;
     const ans = await this.userRepository.removeItem(id);
