@@ -13,8 +13,8 @@ export class Answer extends Document<any> {
   @Prop()
   description: string;
 
-  @Prop()
-  is_correct: IsCorrectEnum;
+  @Prop({ type: Boolean, default: false })
+  is_correct: boolean;
 
   @Prop({ type: Types.ObjectId, ref: Question.name })
   question: Types.ObjectId;

@@ -8,6 +8,8 @@ import { DatabaseModule } from './modules/database/database.module';
 import { AuthenticationModule } from './modules/authentication/authentication.module';
 import { UsersModule } from './modules/users/users.module';
 import { PaginationMiddleware, SortMiddleware } from './middleware';
+import { QuestionsModule } from './modules/questions/questions.module';
+import { CategoryQuestionsModule } from './modules/category_questions/category-questions.module';
 
 @Module({
   imports: [
@@ -19,7 +21,9 @@ import { PaginationMiddleware, SortMiddleware } from './middleware';
     MongooseModule.forRoot(databaseConfig().uri),
     DatabaseModule,
     AuthenticationModule,
-    UsersModule
+    UsersModule,
+    CategoryQuestionsModule,
+    QuestionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
