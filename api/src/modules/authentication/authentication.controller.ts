@@ -12,7 +12,7 @@ import {
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
-import { UserDBService } from '../database/services/userDBService';
+import { UserDBService } from '../database/repositories/users.repository';
 import { UpdateInfoDto } from './dtos/update-info.dto';
 import { ChangeMyPasswordDto } from './dtos/change-my-password.dto';
 import { FileInterceptor } from '@nestjs/platform-express';

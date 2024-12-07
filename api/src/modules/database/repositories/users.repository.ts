@@ -15,7 +15,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
-export class UserDBService extends BaseDBService<User> {
+export class UserRepository extends BaseDBService<User> {
   constructor(
     @InjectModel(User.name) private readonly entityModel,
     private readonly jwtService: JwtService,

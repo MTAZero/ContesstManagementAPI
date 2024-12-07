@@ -5,7 +5,7 @@ import {
   IsNotEmpty,
   IsString,
 } from 'class-validator';
-import { UserRoles } from 'src/enums';
+import { UserRolesEnum } from 'src/enums';
 
 export class CreateUserDto {
   @IsString()
@@ -22,6 +22,6 @@ export class CreateUserDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn([UserRoles.Admin, UserRoles.User])
-  role: UserRoles;
+  @IsIn([UserRolesEnum.Admin, UserRolesEnum.User])
+  role: UserRolesEnum;
 }

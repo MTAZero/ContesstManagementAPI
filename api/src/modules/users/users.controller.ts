@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { ResponseCode, ResponseMessage } from 'src/const';
 import { ApiResponse } from 'src/utils';
-import { UserDBService } from '../database/services/userDBService';
+import { UserRepository } from '../database/repositories/users.repository';
 import { PaginationType } from 'src/middleware';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -27,8 +27,8 @@ import { AdminGuard } from '../authentication/guards/admin-auth.guard';
 
 @Controller('users')
 export class UsersController {
-  @Inject(UserDBService)
-  userDBService: UserDBService;
+  @Inject(UserRepository)
+  userRepository: UserRepository;
 
   @Get('/')
   @UseGuards(JwtAuthGuard)
@@ -43,7 +43,7 @@ export class UsersController {
     const filter = {};
     const keyword = query.keyword ? query.keyword : '';
 
-    const data = await this.userDBService.getItems({
+    const data = await this.userRepository.getItems({
       filter,
       sort,
       skip: pagination.skip,
@@ -67,7 +67,7 @@ export class UsersController {
     @Body(new ValidationPipe()) entity: CreateUserDto,
     @Res() res,
   ) {
-    const ans = await this.userDBService.insertItem(entity);
+    const ans = await this.userRepository.insertItem(entity);
     return ApiResponse(
       res,
       true,
@@ -86,7 +86,7 @@ export class UsersController {
     @Param() params,
   ) {
     const id = params.id;
-    const ans = await this.userDBService.updateItem(id, entity);
+    const ans = await this.userRepository.updateItem(id, entity);
     return ApiResponse(
       res,
       true,
@@ -100,7 +100,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async removeUser(@Res() res, @Param() params) {
     const id = params.id;
-    const ans = await this.userDBService.removeItem(id);
+    const ans = await this.userRepository.removeItem(id);
     return ApiResponse(
       res,
       true,
@@ -114,7 +114,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getDetailUser(@Res() res, @Param() params) {
     const id = params.id;
-    const ans = await this.userDBService.getItemById(id);
+    const ans = await this.userRepository.getItemById(id);
     return ApiResponse(
       res,
       true,
