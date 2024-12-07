@@ -175,7 +175,7 @@ export class ContestsController {
         return ApiResponse(
           res,
           false,
-          "FORBIDDEN",
+          ResponseCode.FORBIDDEN,
           "Cannot add questions within 15 minutes of contest start time",
           null
         );
@@ -223,7 +223,7 @@ export class ContestsController {
         return ApiResponse(
           res,
           false,
-          "NOT_FOUND",
+          ResponseCode.NOT_FOUND,
           `Contest ${contestId} not found`,
           null
         );
@@ -237,7 +237,7 @@ export class ContestsController {
         return ApiResponse(
           res,
           false,
-          "FORBIDDEN",
+          ResponseCode.FORBIDDEN,
           "Cannot add category questions within 15 minutes of contest start time",
           null
         );

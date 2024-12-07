@@ -5,12 +5,13 @@ export const ResponseCode = {
   UNAUTHORIZATION: 401,
   ERROR: 500,
   BAD_REQUEST: 400,
+  FORBIDDEN: 403,
 };
 
 export const ResponseMessage = {
-  SUCCESS: 'success',
-  ERROR: 'error',
-  ALREADY_EXIST: 'Already exist entity',
-  NOT_HAVE_PERMISSION: 'You do not have permission',
-  NOT_FOUND: 'Not found',
+  SUCCESS: "success",
+  ERROR: "error",
+  ALREADY_EXIST: "Already exist entity",
+  NOT_HAVE_PERMISSION: "You do not have permission",
+  NOT_FOUND: "Not found",
 };
