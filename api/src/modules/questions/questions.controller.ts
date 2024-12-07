@@ -226,7 +226,119 @@ export class QuestionsController {
                 ...answer,
                 ...{
                   question: createdQuestion._id,
-                  description: ''
+                  description: "",
+                },
+              })
+            )
+          );
+        }
+      }
+
+      // Phản hồi thành công
+      return ApiResponse(res, true, ResponseCode.SUCCESS, questions, null);
+    } catch (error) {
+      console.error("Error during question import:", error.message);
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to import questions",
+        null
+      );
+    } finally {
+      // Xóa file tạm nếu có path
+      if (file && file.path) {
+        try {
+          fs.unlinkSync(file.path);
+          console.log("Temporary file deleted:", file.path);
+        } catch (unlinkError) {
+          console.error(
+            "Failed to delete temporary file:",
+            unlinkError.message
+          );
+        }
+      }
+    }
+  }
+
+  @Post("/import-category/:categoryId")
+  @UseGuards(AdminGuard)
+  @UseInterceptors(FileInterceptor("file", multerOptions))
+  async importQuestionsToCategory(
+    @Param("categoryId") categoryId: string, // Nhận ID category từ URL
+    @UploadedFile() file: UploadedMulterFile,
+    @Res() res
+  ) {
+    try {
+      console.log("Uploaded File:", file);
+
+      // Kiểm tra nếu không có file được tải lên
+      if (!file || !file.path) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.BAD_REQUEST,
+          "File is required",
+          null
+        );
+      }
+
+      // Đọc dữ liệu từ file Excel
+      const workbook = xlsx.readFile(file.path);
+      const sheetName = workbook.SheetNames[0]; // Lấy sheet đầu tiên
+      if (!sheetName) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.BAD_REQUEST,
+          "No sheets found in the Excel file",
+          null
+        );
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows = xlsx.utils.sheet_to_json(sheet);
+      if (rows.length === 0) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.BAD_REQUEST,
+          "The sheet is empty",
+          null
+        );
+      }
+
+      // Xử lý dữ liệu từ Excel
+      const questions = rows.map((row: any) => ({
+        content: row["Content"],
+        description: row["Description"] || "",
+        category: categoryId, // Sử dụng categoryId từ URL
+        answers: [
+          { content: row["Answer 1"], is_correct: row["Correct 1"] === "true" },
+          { content: row["Answer 2"], is_correct: row["Correct 2"] === "true" },
+          { content: row["Answer 3"], is_correct: row["Correct 3"] === "true" },
+          { content: row["Answer 4"], is_correct: row["Correct 4"] === "true" },
+        ].filter((answer) => answer.content), // Chỉ giữ câu trả lời có nội dung
+      }));
+
+      // Lưu dữ liệu vào database
+      for (const question of questions) {
+        // Tạo câu hỏi
+        const createdQuestion = await this.questionsRepository.insertItem({
+          content: question.content,
+          description: question.description,
+          category: question.category,
+        });
+
+        // Lưu câu trả lời
+        if (question.answers.length > 0) {
+          await Promise.all(
+            question.answers.map((answer) =>
+              this.answersRepository.insertItem({
+                ...answer,
+                ...{
+                  question: createdQuestion._id,
+                  description: "",
                 },
               })
             )
@@ -239,8 +351,8 @@ export class QuestionsController {
         res,
         true,
         ResponseCode.SUCCESS,
-        questions,
-        null
+        "Questions imported successfully",
+        questions
       );
     } catch (error) {
       console.error("Error during question import:", error.message);
@@ -264,6 +376,59 @@ export class QuestionsController {
           );
         }
       }
+    }
+  }
+
+  @Delete("/category/:categoryId")
+  @UseGuards(AdminGuard)
+  async deleteQuestionsAndAnswersByCategory(
+    @Param("categoryId") categoryId: string,
+    @Res() res
+  ) {
+    try {
+      // Lấy danh sách các câu hỏi thuộc categoryId
+      const questions = await this.questionsRepository.getItems({
+        filter: { category: categoryId },
+        sort: {},
+        skip: 0,
+        limit: 1000,
+        textSearch: "",
+      });
+
+      // Lấy danh sách ID các câu hỏi
+      const questionIds = questions.items.map((q) => q._id);
+
+      // Xóa câu trả lời liên quan
+      if (questionIds.length > 0) {
+        await this.answersRepository.removeMany({
+          question: { $in: questionIds },
+        });
+      }
+
+      // Xóa câu hỏi
+      const result = await this.questionsRepository.removeMany({
+        category: categoryId,
+      });
+
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        `All questions and answers in category ${categoryId} have been deleted`,
+        result
+      );
+    } catch (error) {
+      console.error(
+        "Error deleting questions and answers by category:",
+        error.message
+      );
+      return ApiResponse(
+        res,
+        false,
+        ResponseCode.ERROR,
+        "Failed to delete questions and answers by category",
+        null
+      );
     }
   }
 }
