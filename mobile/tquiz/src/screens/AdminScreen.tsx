@@ -1,8 +1,12 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Appbar, Text } from "react-native-paper";
+import { Appbar, List } from "react-native-paper";
 
 const AdminScreen = ({ navigation }: { navigation: any }) => {
+  const handleNavigation = (destination: string) => {
+    navigation.navigate(destination); // Điều hướng đến màn hình tương ứng
+  };
+
   return (
     <View style={styles.container}>
       {/* Topbar với nút Back */}
@@ -11,10 +15,37 @@ const AdminScreen = ({ navigation }: { navigation: any }) => {
         <Appbar.Content title="Quản Trị Hệ Thống" />
       </Appbar.Header>
 
-      {/* Nội dung màn hình */}
-      <View style={styles.content}>
-        <Text style={styles.title}>Chức năng quản trị</Text>
-        <Text>Chức năng quản trị sẽ được thêm tại đây.</Text>
+      {/* Menu quản trị */}
+      <View style={styles.menu}>
+        <List.Section>
+          <View style={styles.itemContainer}>
+            <List.Item
+              style={styles.item}
+              title="Quản Lý Người Dùng"
+              description="Thêm, sửa, xóa thông tin người dùng"
+              left={(props) => <List.Icon {...props} icon="account" />}
+              onPress={() => handleNavigation("UserManagement")}
+            />
+          </View>
+          <View style={styles.itemContainer}>
+            <List.Item
+              style={styles.item}
+              title="Quản Lý Câu Hỏi"
+              description="Thêm, sửa, xóa câu hỏi trong hệ thống"
+              left={(props) => <List.Icon {...props} icon="help-circle" />}
+              onPress={() => handleNavigation("QuestionManagement")}
+            />
+          </View>
+          <View style={styles.itemContainer}>
+            <List.Item
+              style={styles.item}
+              title="Quản Lý Cuộc Thi"
+              description="Thêm, sửa, xóa các cuộc thi"
+              left={(props) => <List.Icon {...props} icon="trophy" />}
+              onPress={() => handleNavigation("ContestManagement")}
+            />
+          </View>
+        </List.Section>
       </View>
     </View>
   );
@@ -24,17 +55,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  menu: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 16,
     backgroundColor: "#f5f5f5",
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 16,
+  itemContainer: {
+    marginBottom: 5, // Khoảng cách giữa các mục
+  },
+  item: {
+    backgroundColor: "#ffffff", // Màu nền trắng
+    borderRadius: 4, // Bo góc
+    elevation: 2, // Bóng đổ nhẹ
   },
 });
 
