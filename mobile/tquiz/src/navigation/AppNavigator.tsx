@@ -8,7 +8,7 @@ import HomeScreen from "../screens/HomeScreen";
 import AdminScreen from "../screens/AdminScreen";
 import SplashScreen from "../screens/SplashScreen";
 import UserManagement from "../screens/UserManagement/UserManagement";
-import QuestionManagement from "../screens/QuestionManagement";
+import QuestionManagement from "../screens/QuestionManagement/QuestionManagement";
 import ContestManagement from "../screens/ContestManagement";
 
 const Stack = createStackNavigator();

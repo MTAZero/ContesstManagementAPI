@@ -16,33 +16,35 @@ import {
   FAB,
 } from "react-native-paper";
 import { useSelector } from "react-redux";
-import UserInfoModal from "./UserInfoModal";
-import userAPIService from "../../services/userService";
+import QuestionInfoModal from "./QuestionInfoModal";
+import questionAPIService from "../../services/questionService";
 import { useNavigation } from "@react-navigation/native";
 
-const UserManagement = () => {
+const QuestionManagement = () => {
   const { accessToken } = useSelector((state: any) => state.user); // Lấy token từ Redux
-  const [users, setUsers] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [userToEdit, setUserToEdit] = useState(null); // User đang được chỉnh sửa
+  const [questionToEdit, setQuestionToEdit] = useState(null); // Question đang được chỉnh sửa
   const [loading, setLoading] = useState(false);
-  const pageSize = 5;
+  const pageSize = 10;
 
   useEffect(() => {
-    fetchUsers();
+    fetchQuestions();
   }, [page, search]);
 
-  const fetchUsers = async () => {
+  const fetchQuestions = async () => {
     if (!accessToken) {
       console.error("Không có token");
       return;
     }
     setLoading(true);
+
     try {
-      const response = await userAPIService.getUsers(
+      const response = await questionAPIService.getQuestions(
+        "",
         pageSize,
         page,
         search,
@@ -50,77 +52,72 @@ const UserManagement = () => {
       );
       const { data } = response;
       if (data?.items) {
-        setUsers(data.items);
-        setTotalPages(Math.ceil(data.total / data.size));
+        setQuestions(data.items);
+        setTotalPages(Math.ceil(data.total / pageSize));
       } else {
-        console.error("Không có danh sách người dùng trong phản hồi");
+        console.error("Không có danh sách câu hỏi trong phản hồi");
       }
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách người dùng:", error.message);
+      console.error("Lỗi khi lấy danh sách câu hỏi:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveUser = async (user: any, isEditing: boolean) => {
+  const handleSaveQuestion = async (question: any, isEditing: boolean) => {
     if (!accessToken) {
       console.error("Không có token");
       return;
     }
-
     try {
       if (isEditing) {
-        await userAPIService.updateUser(user._id, user, accessToken);
-        Alert.alert("Thành công", "Thông tin người dùng đã được cập nhật.");
+        await questionAPIService.updateQuestion(
+          question._id,
+          question,
+          accessToken
+        );
+        Alert.alert("Thành công", "Câu hỏi đã được cập nhật.");
       } else {
-        await userAPIService.insertUser(user, accessToken);
-        Alert.alert("Thành công", "Người dùng đã được thêm.");
+        await questionAPIService.insertQuestion(question, accessToken);
+        Alert.alert("Thành công", "Câu hỏi đã được thêm.");
       }
-      fetchUsers(); // Tải lại danh sách người dùng
+      fetchQuestions(); // Tải lại danh sách câu hỏi
     } catch (error) {
-      console.error("Lỗi khi lưu thông tin người dùng:", error.message);
+      console.error("Lỗi khi lưu thông tin câu hỏi:", error.message);
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteQuestion = async (id: string) => {
     if (!accessToken) {
       console.error("Không có token");
       return;
     }
-
-    Alert.alert(
-      "Xóa Người Dùng",
-      "Bạn có chắc chắn muốn xóa người dùng này không?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xóa",
-          onPress: async () => {
-            try {
-              await userAPIService.deleteUser(userId, accessToken); // Gọi API xóa
-              Alert.alert("Thành công", "Người dùng đã được xóa.");
-              fetchUsers(); // Cập nhật danh sách người dùng
-            } catch (error) {
-              console.error("Lỗi khi xóa người dùng:", error.message);
-              Alert.alert("Lỗi", "Không thể xóa người dùng.");
-            }
-          },
+    Alert.alert("Xóa Câu Hỏi", "Bạn có chắc chắn muốn xóa câu hỏi này không?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        onPress: async () => {
+          try {
+            await questionAPIService.deleteQuestion(id, accessToken);
+            Alert.alert("Thành công", "Câu hỏi đã được xóa.");
+            fetchQuestions(); // Tải lại danh sách câu hỏi
+          } catch (error) {
+            console.error("Lỗi khi xóa câu hỏi:", error.message);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
-  const handleEditUser = (user: any) => {
-    console.log("user : ", user);
-    setUserToEdit(user); // Đặt thông tin user vào state
+  const handleEditQuestion = (question: any) => {
+    setQuestionToEdit(question); // Đặt thông tin câu hỏi vào state
     setModalVisible(true); // Hiển thị modal
   };
 
-  const handleAddUser = () => {
-    setUserToEdit(null); // Đặt chế độ "thêm mới"
+  const handleAddQuestion = () => {
+    setQuestionToEdit(null); // Đặt chế độ "thêm mới"
     setModalVisible(true); // Hiển thị modal
   };
-
   const navigation = useNavigation();
 
   return (
@@ -131,13 +128,13 @@ const UserManagement = () => {
             navigation.goBack();
           }}
         />
-        <Appbar.Content title="Quản Lý Người Dùng" />
+        <Appbar.Content title="Quản Lý Câu Hỏi" />
       </Appbar.Header>
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <IconButton icon="magnify" />
           <RNTextInput
-            placeholder="Tìm kiếm người dùng..."
+            placeholder="Tìm kiếm câu hỏi..."
             value={search}
             onChangeText={setSearch}
             style={styles.searchInput}
@@ -145,25 +142,36 @@ const UserManagement = () => {
         </View>
       </View>
       <FlatList
-        data={users}
+        data={questions}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <Card style={styles.card}>
             <View style={styles.cardContent}>
-              <Text style={styles.fullname}>{item.fullname}</Text>
-              <Text style={styles.username}>Username: {item.username}</Text>
-              <Text style={styles.role}>Role: {item.role}</Text>
+              <Text style={styles.title}>Nội dung: {item.content}</Text>
+              <Text style={styles.category}>
+                Danh mục: {item.category_detail?.name || "Không rõ"}
+              </Text>
+              <Text style={styles.options}>
+                Lựa chọn:{" "}
+                {item.answers
+                  ?.map((answer) =>
+                    answer.is_correct
+                      ? `${answer.content} (Đúng)`
+                      : `${answer.content}`
+                  )
+                  .join(", ")}
+              </Text>
             </View>
             <Card.Actions style={styles.cardActions}>
               <IconButton
                 icon="pencil"
                 size={16}
-                onPress={() => handleEditUser(item)}
+                onPress={() => handleEditQuestion(item)}
               />
               <IconButton
                 icon="delete"
                 size={16}
-                onPress={() => handleDeleteUser(item._id)} // Gọi hàm xóa người dùng
+                onPress={() => handleDeleteQuestion(item._id)}
                 color="red"
               />
             </Card.Actions>
@@ -176,7 +184,7 @@ const UserManagement = () => {
           disabled={page === 1}
           onPress={() => setPage((prev) => Math.max(1, prev - 1))}
         >
-          <Text> Trang Trước</Text>
+          Trang Trước
         </Button>
 
         <Text>
@@ -188,21 +196,23 @@ const UserManagement = () => {
           disabled={page === totalPages}
           onPress={() => setPage((prev) => Math.min(totalPages, prev + 1))}
         >
-          <Text> Trang Sau</Text>
+          Trang Sau
         </Button>
       </View>
+      {/* Nút thêm câu hỏi */}
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={handleAddUser}
+        onPress={handleAddQuestion}
         color="#fff"
-        label="Thêm Người Dùng"
+        label="Thêm Câu Hỏi"
       />
-      <UserInfoModal
+      {/* Modal thêm/sửa câu hỏi */}
+      <QuestionInfoModal
         visible={modalVisible}
         onDismiss={() => setModalVisible(false)}
-        onSubmit={handleSaveUser}
-        userToEdit={userToEdit}
+        onSubmit={handleSaveQuestion}
+        questionToEdit={questionToEdit}
       />
     </View>
   );
@@ -243,17 +253,18 @@ const styles = StyleSheet.create({
   cardContent: {
     paddingBottom: 4,
   },
-  fullname: {
+  title: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 4,
   },
-  username: {
+  category: {
     fontSize: 14,
     marginBottom: 4,
   },
-  role: {
+  options: {
     fontSize: 14,
+    marginBottom: 4,
   },
   cardActions: {
     padding: 0,
@@ -276,4 +287,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserManagement;
+export default QuestionManagement;

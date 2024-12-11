@@ -26,8 +26,9 @@ export const callAPI = async (
       data,
       params,
     });
+
     return response.data; // Trả về dữ liệu nếu thành công
   } catch (error: any) {
-    throw error.response?.data || { message: "Something went wrong" }; // Trả về lỗi
+    throw error.response?.data || { message: error.message }; // Trả về lỗi
   }
 };
