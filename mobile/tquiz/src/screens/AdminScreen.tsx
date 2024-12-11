@@ -39,6 +39,15 @@ const AdminScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.itemContainer}>
             <List.Item
               style={styles.item}
+              title="Quản Lý Danh Mục Câu Hỏi"
+              description="Quản lý danh mục câu hỏi và nội dung liên quan"
+              left={(props) => <List.Icon {...props} icon="folder" />}
+              onPress={() => handleNavigation("CategoryManagement")}
+            />
+          </View>
+          <View style={styles.itemContainer}>
+            <List.Item
+              style={styles.item}
               title="Quản Lý Cuộc Thi"
               description="Thêm, sửa, xóa các cuộc thi"
               left={(props) => <List.Icon {...props} icon="trophy" />}

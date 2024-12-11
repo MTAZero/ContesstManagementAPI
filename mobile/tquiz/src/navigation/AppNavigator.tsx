@@ -10,6 +10,7 @@ import SplashScreen from "../screens/SplashScreen";
 import UserManagement from "../screens/UserManagement/UserManagement";
 import QuestionManagement from "../screens/QuestionManagement/QuestionManagement";
 import ContestManagement from "../screens/ContestManagement";
+import CategoryManagement from "../screens/CategoryManagement/CategoryManagement";
 
 const Stack = createStackNavigator();
 
@@ -44,16 +45,42 @@ const AppNavigator = () => {
   }
 
   return (
-    <Stack.Navigator
-      screenOptions={{ headerShown: false }}
-      initialRouteName={initialRoute}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Admin" component={AdminScreen} />
-      <Stack.Screen name="UserManagement" component={UserManagement} />
-      <Stack.Screen name="QuestionManagement" component={QuestionManagement} />
-      <Stack.Screen name="ContestManagement" component={ContestManagement} />
+    <Stack.Navigator>
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Admin"
+        component={AdminScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="UserManagement"
+        component={UserManagement}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="QuestionManagement"
+        component={QuestionManagement}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ContestManagement"
+        component={ContestManagement}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CategoryManagement" // Đăng ký màn hình mới
+        component={CategoryManagement}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 };

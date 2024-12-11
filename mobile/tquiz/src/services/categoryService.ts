@@ -1,8 +1,17 @@
 import { callAPI, HttpMethod } from "./baseAPI";
 
-// Lấy danh sách category
-const getCategories = async (accessToken: string) => {
-  return callAPI(HttpMethod.GET, "/category-questions", accessToken);
+// Lấy danh sách category với phân trang và tìm kiếm
+const getCategories = async (
+  pageSize: number,
+  pageIndex: number,
+  keyword: string,
+  accessToken: string
+) => {
+  return callAPI(HttpMethod.GET, "/category-questions", accessToken, undefined, {
+    pageSize,
+    pageIndex,
+    keyword,
+  });
 };
 
 // Lấy chi tiết category theo ID
@@ -21,7 +30,7 @@ const insertCategory = async (
 // Cập nhật thông tin category
 const updateCategory = async (
   id: string,
-  data: { name: string },
+  data: { name: string; description?: string },
   accessToken: string
 ) => {
   return callAPI(
