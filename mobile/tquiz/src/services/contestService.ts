@@ -7,7 +7,7 @@ const getContests = async (
   keyword: string,
   accessToken: string
 ) => {
-  return callAPI(HttpMethod.GET, "/contest", accessToken, undefined, {
+  return callAPI(HttpMethod.GET, "/contests", accessToken, undefined, {
     pageSize,
     pageIndex,
     keyword,
@@ -16,7 +16,7 @@ const getContests = async (
 
 // Xem chi tiết cuộc thi
 const getContestById = async (id: string, accessToken: string) => {
-  return callAPI(HttpMethod.GET, `/contest/${id}`, accessToken);
+  return callAPI(HttpMethod.GET, `/contests/${id}`, accessToken);
 };
 
 // Thêm mới cuộc thi
@@ -29,7 +29,7 @@ const insertContest = async (
   },
   accessToken: string
 ) => {
-  return callAPI(HttpMethod.POST, "/contest", accessToken, data);
+  return callAPI(HttpMethod.POST, "/contests", accessToken, data);
 };
 
 // Cập nhật thông tin cuộc thi
@@ -43,19 +43,19 @@ const updateContest = async (
   },
   accessToken: string
 ) => {
-  return callAPI(HttpMethod.PUT, `/contest/${id}`, accessToken, data);
+  return callAPI(HttpMethod.PUT, `/contests/${id}`, accessToken, data);
 };
 
 // Xóa cuộc thi
 const deleteContest = async (id: string, accessToken: string) => {
-  return callAPI(HttpMethod.DELETE, `/contest/${id}`, accessToken);
+  return callAPI(HttpMethod.DELETE, `/contests/${id}`, accessToken);
 };
 
 // Lấy danh sách câu hỏi của cuộc thi
 const getContestQuestions = async (contestId: string, accessToken: string) => {
   return callAPI(
     HttpMethod.GET,
-    `/contest/${contestId}/questions`,
+    `/contests/${contestId}/questions`,
     accessToken
   );
 };
@@ -68,7 +68,7 @@ const addQuestionsToContest = async (
 ) => {
   return callAPI(
     HttpMethod.POST,
-    `/contest/${contestId}/questions`,
+    `/contests/${contestId}/questions`,
     accessToken,
     { questionIds }
   );
@@ -82,7 +82,7 @@ const addCategoryQuestionsToContest = async (
 ) => {
   return callAPI(
     HttpMethod.POST,
-    `/contest/${contestId}/category/${categoryId}`,
+    `/contests/${contestId}/category/${categoryId}`,
     accessToken
   );
 };
@@ -95,7 +95,7 @@ const removeQuestionFromContest = async (
 ) => {
   return callAPI(
     HttpMethod.DELETE,
-    `/contest/${contestId}/questions/${questionId}`,
+    `/contests/${contestId}/questions/${questionId}`,
     accessToken
   );
 };
@@ -107,7 +107,7 @@ const removeAllQuestionsFromContest = async (
 ) => {
   return callAPI(
     HttpMethod.DELETE,
-    `/contest/${contestId}/questions`,
+    `/contests/${contestId}/questions`,
     accessToken
   );
 };
@@ -119,7 +119,7 @@ const getContestParticipants = async (
 ) => {
   return callAPI(
     HttpMethod.GET,
-    `/contest/${contestId}/registrations`,
+    `/contests/${contestId}/registrations`,
     accessToken
   );
 };
@@ -128,7 +128,7 @@ const getContestParticipants = async (
 const registerForContest = async (contestId: string, accessToken: string) => {
   return callAPI(
     HttpMethod.POST,
-    `/contest/${contestId}/register`,
+    `/contests/${contestId}/register`,
     accessToken
   );
 };
@@ -140,14 +140,14 @@ const unregisterFromContest = async (
 ) => {
   return callAPI(
     HttpMethod.DELETE,
-    `/contest/${contestId}/register`,
+    `/contests/${contestId}/register`,
     accessToken
   );
 };
 
 // User bắt đầu làm bài
 const startContest = async (contestId: string, accessToken: string) => {
-  return callAPI(HttpMethod.POST, `/contest/${contestId}/enter`, accessToken);
+  return callAPI(HttpMethod.POST, `/contests/${contestId}/enter`, accessToken);
 };
 
 // User cập nhật lựa chọn
@@ -159,7 +159,7 @@ const updateAnswer = async (
 ) => {
   return callAPI(
     HttpMethod.POST,
-    `/contest/${contestId}/question/${questionId}/answer`,
+    `/contests/${contestId}/question/${questionId}/answer`,
     accessToken,
     { answerId }
   );
@@ -167,19 +167,19 @@ const updateAnswer = async (
 
 // User nộp bài
 const submitContest = async (contestId: string, accessToken: string) => {
-  return callAPI(HttpMethod.POST, `/contest/${contestId}/submit`, accessToken);
+  return callAPI(HttpMethod.POST, `/contests/${contestId}/submit`, accessToken);
 };
 
 // Lấy kết quả của user
 const getUserResult = async (contestId: string, accessToken: string) => {
-  return callAPI(HttpMethod.GET, `/contest/${contestId}/result`, accessToken);
+  return callAPI(HttpMethod.GET, `/contests/${contestId}/result`, accessToken);
 };
 
 // Bảng xếp hạng
 const getLeaderboard = async (contestId: string, accessToken: string) => {
   return callAPI(
     HttpMethod.GET,
-    `/contest/${contestId}/leaderboard`,
+    `/contests/${contestId}/leaderboard`,
     accessToken
   );
 };
@@ -189,7 +189,7 @@ const getUpcomingContests = async (
   isRegistered: boolean,
   accessToken: string
 ) => {
-  return callAPI(HttpMethod.GET, `/contest/upcoming`, accessToken, undefined, {
+  return callAPI(HttpMethod.GET, `/contests/upcoming`, accessToken, undefined, {
     isRegistered,
   });
 };
@@ -204,7 +204,7 @@ const getUpcomingRegisteredContests = async (
 ) => {
   return callAPI(
     HttpMethod.GET,
-    `/contest/upcoming-registered`,
+    `/contests/upcoming-registered`,
     accessToken,
     undefined,
     {
@@ -221,7 +221,7 @@ const getCompletedContests = async (
   isRegistered: boolean,
   accessToken: string
 ) => {
-  return callAPI(HttpMethod.GET, `/contest/completed`, accessToken, undefined, {
+  return callAPI(HttpMethod.GET, `/contests/completed`, accessToken, undefined, {
     isRegistered,
   });
 };

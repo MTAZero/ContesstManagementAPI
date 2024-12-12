@@ -9,7 +9,7 @@ export class CategoryQuestion extends Document<any> {
   name: string;
 
   @Prop()
-  descriptions: string;
+  description: string;
 
   @Prop()
   created_date: number;
