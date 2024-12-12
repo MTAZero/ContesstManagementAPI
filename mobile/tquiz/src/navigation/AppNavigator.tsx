@@ -11,6 +11,7 @@ import UserManagement from "../screens/UserManagement/UserManagement";
 import QuestionManagement from "../screens/QuestionManagement/QuestionManagement";
 import ContestManagement from "../screens/ContestManagement/ContestManagement";
 import CategoryManagement from "../screens/CategoryManagement/CategoryManagement";
+import ContestDetailScreen from "../screens/ContestManagement/ContestDetailScreen";
 
 const Stack = createStackNavigator();
 
@@ -77,8 +78,13 @@ const AppNavigator = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="CategoryManagement" // Đăng ký màn hình mới
+        name="CategoryManagement"
         component={CategoryManagement}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ContestDetail"
+        component={ContestDetailScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

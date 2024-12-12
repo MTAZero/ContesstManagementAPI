@@ -18,6 +18,7 @@ import {
 import { useSelector } from "react-redux";
 import ContestInfoModal from "./ContestInfoModal";
 import contestService from "../../services/contestService";
+import { useNavigation } from "@react-navigation/native";
 
 const ContestManagement = () => {
   const { accessToken } = useSelector((state: any) => state.user);
@@ -110,6 +111,8 @@ const ContestManagement = () => {
     setModalVisible(true);
   };
 
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
       <Appbar.Header>
@@ -146,7 +149,12 @@ const ContestManagement = () => {
               <IconButton
                 icon="pencil"
                 size={16}
-                onPress={() => handleEditContest(item)}
+                onPress={() => {
+                  navigation.navigate("ContestDetail", {
+                    contestId: item._id,
+                    contestName: item.name,
+                  });
+                }}
               />
               <IconButton
                 icon="delete"

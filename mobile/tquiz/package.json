@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.0",
+    "@react-native-community/datetimepicker": "^8.2.0",
     "@reduxjs/toolkit": "^2.4.0",
     "axios": "^1.7.9",
     "expo": "~52.0.17",
@@ -19,10 +20,12 @@
     "react-native": "0.76.3",
     "react-native-gesture-handler": "^2.21.2",
     "react-native-get-random-values": "^1.11.0",
+    "react-native-pager-view": "^6.6.1",
     "react-native-paper": "^5.12.5",
     "react-native-reanimated": "^3.16.3",
     "react-native-safe-area-context": "^5.0.0",
     "react-native-screens": "^4.3.0",
+    "react-native-tab-view": "^4.0.5",
     "react-native-vector-icons": "^10.2.0",
     "react-redux": "^9.1.2"
   },
