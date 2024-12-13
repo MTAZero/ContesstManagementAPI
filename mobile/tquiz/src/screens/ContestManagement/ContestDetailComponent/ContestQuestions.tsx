@@ -29,10 +29,15 @@ const ContestQuestions = ({
         page,
         pageSize
       );
-      const { items, total } = response.data;
-      setQuestions((questions)); // Đặt lại danh sách khi ở trang đầu
-      setTotalPages(Math.ceil(total / pageSize));
-      setTotalQuestions(total); // Cập nhật tổng số câu hỏi
+      const { items, total, page: pageIndex } = response.data;
+
+      if (page === pageIndex) {
+        setTimeout(() => {
+          setQuestions(items); // Đặt lại danh sách khi ở trang đầu
+          setTotalPages(Math.ceil(total / pageSize));
+          setTotalQuestions(total); // Cập nhật tổng số câu hỏi
+        }, 1);
+      }
     } catch (error) {
       console.error("Error fetching questions:", error);
     } finally {
@@ -82,8 +87,6 @@ const ContestQuestions = ({
         renderItem={renderQuestion}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContainer}
-        onEndReached={() => setPage((prev) => prev + 1)}
-        onEndReachedThreshold={0.5}
         ListFooterComponent={
           loading ? <ActivityIndicator size="small" /> : null
         }
@@ -91,7 +94,9 @@ const ContestQuestions = ({
       <View style={styles.paginationContainer}>
         <TouchableOpacity
           style={[styles.paginationButton, page === 1 && styles.disabledButton]}
-          onPress={() => page > 1 && setPage(page - 1)}
+          onPress={() => {
+            if (page > 1 && !loading) setPage(page - 1);
+          }}
           disabled={page === 1}
         >
           <Text style={styles.paginationText}>Trước</Text>

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Text,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import contestService from "../../../services/contestService";
 
@@ -22,7 +23,7 @@ const ContestParticipants = ({
   const pageSize = 10; // Kích thước trang
 
   const fetchParticipants = async () => {
-    if (loading || page > totalPages) return;
+    if (loading) return;
 
     setLoading(true);
     try {
@@ -33,7 +34,7 @@ const ContestParticipants = ({
         pageSize
       );
       const { items, total } = response.data;
-      setParticipants((prev) => [...prev, ...items]);
+      setParticipants(items);
       setTotalPages(Math.ceil(total / pageSize));
     } catch (error) {
       console.error("Error fetching participants:", error);
@@ -48,7 +49,7 @@ const ContestParticipants = ({
 
   const renderParticipant = ({ item, index }: { item: any; index: number }) => (
     <View style={styles.row}>
-      <Text style={styles.rank}>{index + 1}</Text>
+      <Text style={styles.rank}>{(page - 1) * pageSize + index + 1}</Text>
       <View style={styles.info}>
         <Text style={styles.fullname}>
           {item.user_detail?.fullname || "N/A"}
@@ -69,19 +70,47 @@ const ContestParticipants = ({
   );
 
   return (
-    <FlatList
-      data={participants}
-      renderItem={renderParticipant}
-      keyExtractor={(item) => item._id}
-      contentContainerStyle={styles.listContainer}
-      onEndReached={() => setPage((prev) => prev + 1)}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={loading ? <ActivityIndicator size="small" /> : null}
-    />
+    <View style={styles.container}>
+      <FlatList
+        data={participants}
+        renderItem={renderParticipant}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.listContainer}
+        ListFooterComponent={
+          loading ? <ActivityIndicator size="small" /> : null
+        }
+      />
+      {/* Phân trang */}
+      <View style={styles.pagination}>
+        <TouchableOpacity
+          style={[styles.pageButton, page === 1 && styles.disabledButton]}
+          disabled={page === 1 || loading}
+          onPress={() => setPage((prev) => Math.max(prev - 1, 1))}
+        >
+          <Text style={styles.pageButtonText}>Trang trước</Text>
+        </TouchableOpacity>
+        <Text style={styles.pageInfo}>
+          Trang {page} / {totalPages}
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.pageButton,
+            page === totalPages && styles.disabledButton,
+          ]}
+          disabled={page === totalPages || loading}
+          onPress={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+        >
+          <Text style={styles.pageButtonText}>Trang sau</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   listContainer: {
     padding: 10,
   },
@@ -123,6 +152,31 @@ const styles = StyleSheet.create({
   submitted: {
     color: "green",
     fontWeight: "bold",
+  },
+  pagination: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#f5f5f5",
+  },
+  pageButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#6A0DAD",
+    borderRadius: 5,
+  },
+  disabledButton: {
+    backgroundColor: "#ddd",
+  },
+  pageButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  pageInfo: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
   },
 });
 

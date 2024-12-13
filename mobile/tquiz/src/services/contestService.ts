@@ -64,8 +64,8 @@ const getContestQuestions = async (
     accessToken,
     undefined,
     {
-      pageIndex,
-      pageSize,
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
     }
   );
 };
