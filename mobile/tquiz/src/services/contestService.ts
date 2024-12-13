@@ -52,14 +52,23 @@ const deleteContest = async (id: string, accessToken: string) => {
 };
 
 // Lấy danh sách câu hỏi của cuộc thi
-const getContestQuestions = async (contestId: string, accessToken: string) => {
+const getContestQuestions = async (
+  contestId: string,
+  accessToken: string,
+  pageIndex: number = 1,
+  pageSize: number = 10
+) => {
   return callAPI(
     HttpMethod.GET,
     `/contests/${contestId}/questions`,
-    accessToken
+    accessToken,
+    undefined,
+    {
+      pageIndex,
+      pageSize,
+    }
   );
 };
-
 // Thêm danh sách câu hỏi vào cuộc thi
 const addQuestionsToContest = async (
   contestId: string,
@@ -112,15 +121,22 @@ const removeAllQuestionsFromContest = async (
   );
 };
 
-// Lấy danh sách người tham gia cuộc thi
+// Lấy danh sách người tham gia cuộc thi với phân trang
 const getContestParticipants = async (
   contestId: string,
-  accessToken: string
+  accessToken: string,
+  pageIndex: number = 1,
+  pageSize: number = 10
 ) => {
   return callAPI(
     HttpMethod.GET,
     `/contests/${contestId}/registrations`,
-    accessToken
+    accessToken,
+    undefined,
+    {
+      pageIndex,
+      pageSize,
+    }
   );
 };
 
@@ -221,9 +237,15 @@ const getCompletedContests = async (
   isRegistered: boolean,
   accessToken: string
 ) => {
-  return callAPI(HttpMethod.GET, `/contests/completed`, accessToken, undefined, {
-    isRegistered,
-  });
+  return callAPI(
+    HttpMethod.GET,
+    `/contests/completed`,
+    accessToken,
+    undefined,
+    {
+      isRegistered,
+    }
+  );
 };
 
 const contestService = {

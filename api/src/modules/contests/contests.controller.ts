@@ -579,29 +579,28 @@ export class ContestsController {
   @UseGuards(AdminGuard)
   async getQuestionsByContest(
     @Param("contestId") contestId: string,
-    @Res() res
+    @Res() res,
+    @Req() req
   ) {
-    try {
-      const questions =
-        await this.questionContestsRepository.getQuestionsByContest(contestId);
+    const pagination: PaginationType = req.pagination;
+    const sort = req.sort;
 
-      return ApiResponse(
-        res,
-        true,
-        ResponseCode.SUCCESS,
-        `Questions fetched successfully for contest ${contestId}`,
-        questions
-      );
-    } catch (error) {
-      console.error("Error fetching questions by contest:", error.message);
-      return ApiResponse(
-        res,
-        false,
-        ResponseCode.ERROR,
-        "Failed to fetch questions by contest",
-        null
-      );
-    }
+    const filter: any = { contest: new ObjectId(contestId) }; // Lọc theo contestId
+
+    const data = await this.questionContestsRepository.getItems({
+      filter,
+      sort,
+      skip: pagination.skip,
+      limit: pagination.limit,
+    });
+
+    return ApiResponse(
+      res,
+      true,
+      ResponseCode.SUCCESS,
+      `Questions fetched successfully for contest ${contestId}`,
+      data
+    );
   }
 
   // đăng kí
@@ -762,62 +761,66 @@ export class ContestsController {
 
   // lấy danh sách người dùng đã đăng kí cuộc thi
   @Get("/:contestId/registrations")
-  @UseGuards(AdminGuard)
-  async getRegistrationsByContest(
-    @Param("contestId") contestId: string,
-    @Query("skip") skip: number = 0,
-    @Query("limit") limit: number = 10,
-    @Res() res
-  ) {
-    try {
-      // Kiểm tra xem cuộc thi có tồn tại hay không
-      const contest = await this.contestsRepository.getItemById(contestId);
-      if (!contest) {
-        return ApiResponse(
-          res,
-          false,
-          ResponseCode.NOT_FOUND,
-          "Contest not found",
-          null
-        );
-      }
-
-      // Lấy danh sách user đã đăng ký cuộc thi
-      const registrations = await this.userContestRepository.getItems({
-        skip: Number(skip), // Bỏ qua số bản ghi
-        limit: Number(limit), // Số bản ghi cần lấy
-        filter: { contest: new ObjectId(contestId) }, // Lọc theo contestId
-        sort: { created_date: -1 }, // Sắp xếp theo ngày đăng ký giảm dần
-      });
-
-      // Tổng số lượng user đã đăng ký
-      const total = registrations.total;
-
-      // Trả về danh sách user cùng tổng số lượng
-      return ApiResponse(
-        res,
-        true,
-        ResponseCode.SUCCESS,
-        "Registrations fetched successfully",
-        {
-          items: registrations.items,
-          total,
-          size: limit,
-          page: Math.floor(Number(skip) / Number(limit)) + 1,
-          offset: skip,
-        }
-      );
-    } catch (error) {
-      console.error("Error fetching registrations:", error.message);
+@UseGuards(AdminGuard)
+async getRegistrationsByContest(
+  @Param("contestId") contestId: string,
+  @Query("page") page: number = 1,
+  @Query("pageSize") pageSize: number = 10,
+  @Res() res
+) {
+  try {
+    // Kiểm tra xem cuộc thi có tồn tại hay không
+    const contest = await this.contestsRepository.getItemById(contestId);
+    if (!contest) {
       return ApiResponse(
         res,
         false,
-        ResponseCode.ERROR,
-        "Failed to fetch registrations",
+        ResponseCode.NOT_FOUND,
+        "Contest not found",
         null
       );
     }
+
+    // Tính toán skip và limit từ page và pageSize
+    const skip = (Number(page) - 1) * Number(pageSize);
+    const limit = Number(pageSize);
+
+    // Lấy danh sách user đã đăng ký cuộc thi
+    const registrations = await this.userContestRepository.getItems({
+      skip,
+      limit,
+      filter: { contest: new ObjectId(contestId) }, // Lọc theo contestId
+      sort: { created_date: -1 }, // Sắp xếp theo ngày đăng ký giảm dần
+    });
+
+    // Tổng số lượng user đã đăng ký
+    const total = registrations.total;
+
+    // Trả về danh sách user cùng tổng số lượng
+    return ApiResponse(
+      res,
+      true,
+      ResponseCode.SUCCESS,
+      "Registrations fetched successfully",
+      {
+        items: registrations.items,
+        total,
+        size: pageSize,
+        page,
+        offset: skip,
+      }
+    );
+  } catch (error) {
+    console.error("Error fetching registrations:", error.message);
+    return ApiResponse(
+      res,
+      false,
+      ResponseCode.ERROR,
+      "Failed to fetch registrations",
+      null
+    );
   }
+}
 
   @Post("/:contestId/enter")
   @UseGuards(JwtAuthGuard)

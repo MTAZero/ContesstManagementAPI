@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, FlatList, StyleSheet, Text } from "react-native";
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Text,
+  ActivityIndicator,
+} from "react-native";
 import contestService from "../../../services/contestService";
 
 const ContestParticipants = ({
@@ -10,44 +16,52 @@ const ContestParticipants = ({
   accessToken: string;
 }) => {
   const [participants, setParticipants] = useState([]);
-
-  useEffect(() => {
-    fetchParticipants();
-  }, []);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10; // Kích thước trang
 
   const fetchParticipants = async () => {
+    if (loading || page > totalPages) return;
+
+    setLoading(true);
     try {
       const response = await contestService.getContestParticipants(
         contestId,
-        accessToken
+        accessToken,
+        page,
+        pageSize
       );
-      setParticipants(response.data.items || []);
+      const { items, total } = response.data;
+      setParticipants((prev) => [...prev, ...items]);
+      setTotalPages(Math.ceil(total / pageSize));
     } catch (error) {
       console.error("Error fetching participants:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchParticipants();
+  }, [page]);
+
   const renderParticipant = ({ item, index }: { item: any; index: number }) => (
-    <View style={styles.box}>
-      {/* Số thứ tự góc trên bên trái */}
-      <View style={styles.badgeContainer}>
-        <Text style={styles.badge}>{index + 1}</Text>
+    <View style={styles.row}>
+      <Text style={styles.rank}>{index + 1}</Text>
+      <View style={styles.info}>
+        <Text style={styles.fullname}>
+          {item.user_detail?.fullname || "N/A"}
+        </Text>
+        <Text style={styles.username}>
+          @{item.user_detail?.username || "unknown"}
+        </Text>
       </View>
-
-      {/* Thông tin người dùng */}
-      <View style={styles.contentContainer}>
-        <View style={styles.infoContainer}>
-          <Text style={styles.fullname}>
-            {item.user_detail?.fullname || "N/A"} (
-            {item.user_detail?.username || "N/A"})
-          </Text>
-          {item.is_submitted && (
-            <Text style={styles.submittedText}>Đã nộp bài</Text>
-          )}
-        </View>
-
-        {/* Kết quả góc dưới bên trái */}
-        <Text style={styles.resultText}>
+      <View style={styles.status}>
+        <Text style={[styles.result, item.is_submitted && styles.submitted]}>
+          {item.is_submitted ? "Đã nộp bài" : "Chưa nộp"}
+        </Text>
+        <Text style={styles.result}>
           Kết quả: {item.result !== undefined ? item.result : "Chưa có"}
         </Text>
       </View>
@@ -60,6 +74,9 @@ const ContestParticipants = ({
       renderItem={renderParticipant}
       keyExtractor={(item) => item._id}
       contentContainerStyle={styles.listContainer}
+      onEndReached={() => setPage((prev) => prev + 1)}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={loading ? <ActivityIndicator size="small" /> : null}
     />
   );
 };
@@ -68,54 +85,44 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 10,
   },
-  box: {
-    display: "flex",
-    flexDirection: "row",
-    marginBottom: 10,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    padding: 10,
-    elevation: 3,
-    position: "relative",
-  },
-  badgeContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#6A0DAD",
-    position: "absolute",
-    top: 10,
-    left: 10,
-  },
-  badge: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  contentContainer: {
-    marginLeft: 60, // Để tránh bị đè bởi badge
-    flex: 1,
-  },
-  infoContainer: {
+  row: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  rank: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  info: {
+    flex: 1,
+    marginLeft: 10,
   },
   fullname: {
     fontSize: 16,
     fontWeight: "bold",
+    color: "#333",
   },
-  submittedText: {
+  username: {
     fontSize: 14,
+    color: "#666",
+  },
+  status: {
+    alignItems: "flex-end",
+  },
+  result: {
+    fontSize: 14,
+    color: "#333",
+  },
+  submitted: {
     color: "green",
     fontWeight: "bold",
-  },
-  resultText: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 10,
   },
 });
 
