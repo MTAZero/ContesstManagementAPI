@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import { Text, ActivityIndicator } from "react-native-paper";
 import contestService from "../../../services/contestService";
+import { Text, ActivityIndicator } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
 
 const ContestQuestions = ({
   contestId,
@@ -49,9 +50,22 @@ const ContestQuestions = ({
     fetchQuestions();
   }, [page]);
 
+  const handleRemoveQuestion = async (questionId: string) => {
+    try {
+      await contestService.removeQuestionFromContest(
+        contestId,
+        questionId,
+        accessToken
+      );
+      fetchQuestions();
+    } catch (error) {
+      console.error("Error removing question:", error);
+    }
+  };
+
   const renderAnswer = (answer: any) => (
     <Text
-      key={answer._id}
+      key={"ans" + answer._id}
       style={[styles.answer, answer.is_correct && styles.correctAnswer]}
     >
       {answer.content}
@@ -74,18 +88,43 @@ const ContestQuestions = ({
         <Text style={styles.answersTitle}>Đáp án:</Text>
         {item.answers.map(renderAnswer)}
       </View>
+      <TouchableOpacity
+        onPress={() => handleRemoveQuestion(item._id)}
+        style={styles.removeButton}
+      >
+        <Text style={styles.removeButtonText}>X</Text>
+      </TouchableOpacity>
     </View>
   );
 
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
+      {/* Nút thêm câu hỏi */}
+      <TouchableOpacity
+        onPress={() => {
+          // setModalVisible(true)
+          navigation.navigate("AddQuestionScreen", {
+            contestId,
+            accessToken,
+            onQuestionAdded: () => {
+              fetchQuestions();
+            },
+          });
+        }}
+        style={styles.addButton}
+      >
+        <Text style={styles.addButtonText}>Thêm Câu Hỏi</Text>
+      </TouchableOpacity>
+      {/* Danh sách câu hỏi */}
       <Text style={styles.totalQuestions}>
         Tổng số câu hỏi: {totalQuestions}
       </Text>
       <FlatList
         data={questions}
         renderItem={renderQuestion}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => "question" + item._id}
         contentContainerStyle={styles.listContainer}
         ListFooterComponent={
           loading ? <ActivityIndicator size="small" /> : null
@@ -139,6 +178,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     elevation: 2,
+    position: "relative",
   },
   questionTitle: {
     fontSize: 16,
@@ -171,6 +211,35 @@ const styles = StyleSheet.create({
   correctAnswer: {
     fontWeight: "bold",
     color: "green",
+  },
+  removeButton: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    backgroundColor: "red",
+    borderRadius: "50%",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: 20,
+    width: 20,
+  },
+  removeButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
+  addButton: {
+    backgroundColor: "#6A0DAD",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    margin: 10,
+  },
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   paginationContainer: {
     flexDirection: "row",
