@@ -10,7 +10,7 @@ export class UpdateContestDto {
   description?: string;
 
   @IsOptional()
-  @IsDate()
+  @IsString()
   start_time?: Date; // Thời gian bắt đầu mới
 
   @IsOptional()

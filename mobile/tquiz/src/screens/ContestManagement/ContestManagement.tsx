@@ -116,7 +116,11 @@ const ContestManagement = () => {
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => {}} />
+        <Appbar.BackAction
+          onPress={() => {
+            navigation.goBack();
+          }}
+        />
         <Appbar.Content title="Quản Lý Cuộc Thi" />
       </Appbar.Header>
       <View style={styles.searchContainer}>
@@ -147,7 +151,7 @@ const ContestManagement = () => {
             </View>
             <Card.Actions style={styles.cardActions}>
               <IconButton
-                icon="pencil"
+                icon="eye"
                 size={16}
                 onPress={() => {
                   navigation.navigate("ContestDetail", {
@@ -155,6 +159,12 @@ const ContestManagement = () => {
                     contestName: item.name,
                   });
                 }}
+              />
+              <IconButton
+                icon="pencil"
+                size={16}
+                onPress={() => handleEditContest(item)}
+                color="#6A0DAD"
               />
               <IconButton
                 icon="delete"
