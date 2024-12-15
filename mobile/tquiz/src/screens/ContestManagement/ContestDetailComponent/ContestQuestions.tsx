@@ -52,6 +52,7 @@ const ContestQuestions = ({
 
   const handleRemoveQuestion = async (questionId: string) => {
     try {
+      // console.log("Removing question:", questionId, contestId);
       await contestService.removeQuestionFromContest(
         contestId,
         questionId,
@@ -89,7 +90,9 @@ const ContestQuestions = ({
         {item.answers.map(renderAnswer)}
       </View>
       <TouchableOpacity
-        onPress={() => handleRemoveQuestion(item._id)}
+        onPress={() => {
+          handleRemoveQuestion(item?.question);
+        }}
         style={styles.removeButton}
       >
         <Text style={styles.removeButtonText}>X</Text>

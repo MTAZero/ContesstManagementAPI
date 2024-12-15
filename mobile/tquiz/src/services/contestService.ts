@@ -102,6 +102,7 @@ const removeQuestionFromContest = async (
   questionId: string,
   accessToken: string
 ) => {
+  console.log("Removing question:", questionId, contestId);
   return callAPI(
     HttpMethod.DELETE,
     `/contests/${contestId}/questions/${questionId}`,

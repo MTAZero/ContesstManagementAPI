@@ -34,7 +34,7 @@ const AddQuestionScreen = ({
   const [categoryTotalPages, setCategoryTotalPages] = useState(1);
 
   const [selectedOption, setSelectedOption] = useState<"manual" | "category">(
-    "manual"
+    "category"
   );
   const [loading, setLoading] = useState(false);
 
@@ -128,20 +128,6 @@ const AddQuestionScreen = ({
       <View style={styles.options}>
         <TouchableOpacity
           onPress={() => {
-            setSelectedOption("manual");
-            setQuestionPage(1);
-          }}
-          style={[
-            styles.optionButton,
-            selectedOption === "manual" && styles.selectedOption,
-          ]}
-        >
-          <Text style={selectedOption === "manual" && styles.selectedText}>
-            Chọn Câu Hỏi
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => {
             setSelectedOption("category");
             setCategoryPage(1);
           }}
@@ -152,6 +138,20 @@ const AddQuestionScreen = ({
         >
           <Text style={selectedOption === "category" && styles.selectedText}>
             Thêm Cả Danh Mục
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            setSelectedOption("manual");
+            setQuestionPage(1);
+          }}
+          style={[
+            styles.optionButton,
+            selectedOption === "manual" && styles.selectedOption,
+          ]}
+        >
+          <Text style={selectedOption === "manual" && styles.selectedText}>
+            Chọn Câu Hỏi
           </Text>
         </TouchableOpacity>
       </View>

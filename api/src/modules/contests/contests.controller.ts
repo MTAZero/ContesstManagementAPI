@@ -409,8 +409,32 @@ export class ContestsController {
         );
       }
 
+      const existingQuestions = await this.questionContestsRepository.getItems({
+        filter: { contest: new ObjectId(contestId) },
+        skip: 0,
+        limit: 1000,
+      });
+
+      const existingQuestionIds = new Set(
+        existingQuestions.items.map((q: any) => q.question.toString())
+      );
+
+      const questionsToAdd = questionIds.filter(
+        (id) => !existingQuestionIds.has(id)
+      );
+
+      if (questionsToAdd.length === 0) {
+        return ApiResponse(
+          res,
+          true,
+          ResponseCode.SUCCESS,
+          "No new questions to add to the contest",
+          []
+        );
+      }
+
       const results = await Promise.all(
-        questionIds.map(async (questionId) => {
+        questionsToAdd.map(async (questionId) => {
           return this.questionContestsRepository.insertItem({
             contest: new ObjectId(contestId),
             question: new ObjectId(questionId),
@@ -422,7 +446,7 @@ export class ContestsController {
         res,
         true,
         ResponseCode.SUCCESS,
-        `${results.length} questions added to contest successfully`,
+        `${results.length} new questions added to contest successfully`,
         results
       );
     } catch (error) {
@@ -471,6 +495,16 @@ export class ContestsController {
         );
       }
 
+      const existingQuestions = await this.questionContestsRepository.getItems({
+        filter: { contest: new ObjectId(contestId) },
+        skip: 0,
+        limit: 1000,
+      });
+
+      const existingQuestionIds = new Set(
+        existingQuestions.items.map((q: any) => q.question.toString())
+      );
+
       const questions = await this.questionsRepository.getItems({
         filter: { category: categoryId },
         sort: {},
@@ -479,8 +513,22 @@ export class ContestsController {
         textSearch: "",
       });
 
+      const questionsToAdd = questions.items.filter(
+        (q: any) => !existingQuestionIds.has(q._id.toString())
+      );
+
+      if (questionsToAdd.length === 0) {
+        return ApiResponse(
+          res,
+          true,
+          ResponseCode.SUCCESS,
+          "No new questions to add from this category to the contest",
+          []
+        );
+      }
+
       const results = await Promise.all(
-        questions.items.map(async (question) => {
+        questionsToAdd.map(async (question) => {
           return this.questionContestsRepository.insertItem({
             contest: new ObjectId(contestId),
             question: question._id,
@@ -492,7 +540,7 @@ export class ContestsController {
         res,
         true,
         ResponseCode.SUCCESS,
-        `${results.length} questions from category ${categoryId} added to contest successfully`,
+        `${results.length} new questions from category ${categoryId} added to contest successfully`,
         results
       );
     } catch (error) {
@@ -761,66 +809,66 @@ export class ContestsController {
 
   // lấy danh sách người dùng đã đăng kí cuộc thi
   @Get("/:contestId/registrations")
-@UseGuards(AdminGuard)
-async getRegistrationsByContest(
-  @Param("contestId") contestId: string,
-  @Query("page") page: number = 1,
-  @Query("pageSize") pageSize: number = 10,
-  @Res() res
-) {
-  try {
-    // Kiểm tra xem cuộc thi có tồn tại hay không
-    const contest = await this.contestsRepository.getItemById(contestId);
-    if (!contest) {
+  @UseGuards(AdminGuard)
+  async getRegistrationsByContest(
+    @Param("contestId") contestId: string,
+    @Query("page") page: number = 1,
+    @Query("pageSize") pageSize: number = 10,
+    @Res() res
+  ) {
+    try {
+      // Kiểm tra xem cuộc thi có tồn tại hay không
+      const contest = await this.contestsRepository.getItemById(contestId);
+      if (!contest) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.NOT_FOUND,
+          "Contest not found",
+          null
+        );
+      }
+
+      // Tính toán skip và limit từ page và pageSize
+      const skip = (Number(page) - 1) * Number(pageSize);
+      const limit = Number(pageSize);
+
+      // Lấy danh sách user đã đăng ký cuộc thi
+      const registrations = await this.userContestRepository.getItems({
+        skip,
+        limit,
+        filter: { contest: new ObjectId(contestId) }, // Lọc theo contestId
+        sort: { created_date: -1 }, // Sắp xếp theo ngày đăng ký giảm dần
+      });
+
+      // Tổng số lượng user đã đăng ký
+      const total = registrations.total;
+
+      // Trả về danh sách user cùng tổng số lượng
+      return ApiResponse(
+        res,
+        true,
+        ResponseCode.SUCCESS,
+        "Registrations fetched successfully",
+        {
+          items: registrations.items,
+          total,
+          size: pageSize,
+          page,
+          offset: skip,
+        }
+      );
+    } catch (error) {
+      console.error("Error fetching registrations:", error.message);
       return ApiResponse(
         res,
         false,
-        ResponseCode.NOT_FOUND,
-        "Contest not found",
+        ResponseCode.ERROR,
+        "Failed to fetch registrations",
         null
       );
     }
-
-    // Tính toán skip và limit từ page và pageSize
-    const skip = (Number(page) - 1) * Number(pageSize);
-    const limit = Number(pageSize);
-
-    // Lấy danh sách user đã đăng ký cuộc thi
-    const registrations = await this.userContestRepository.getItems({
-      skip,
-      limit,
-      filter: { contest: new ObjectId(contestId) }, // Lọc theo contestId
-      sort: { created_date: -1 }, // Sắp xếp theo ngày đăng ký giảm dần
-    });
-
-    // Tổng số lượng user đã đăng ký
-    const total = registrations.total;
-
-    // Trả về danh sách user cùng tổng số lượng
-    return ApiResponse(
-      res,
-      true,
-      ResponseCode.SUCCESS,
-      "Registrations fetched successfully",
-      {
-        items: registrations.items,
-        total,
-        size: pageSize,
-        page,
-        offset: skip,
-      }
-    );
-  } catch (error) {
-    console.error("Error fetching registrations:", error.message);
-    return ApiResponse(
-      res,
-      false,
-      ResponseCode.ERROR,
-      "Failed to fetch registrations",
-      null
-    );
   }
-}
 
   @Post("/:contestId/enter")
   @UseGuards(JwtAuthGuard)
