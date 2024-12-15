@@ -203,12 +203,16 @@ const getLeaderboard = async (contestId: string, accessToken: string) => {
 
 // Danh sách các cuộc thi sắp tới
 const getUpcomingContests = async (
-  isRegistered: boolean,
-  accessToken: string
+  accessToken: string,
+  isRegistered?: boolean | undefined,
 ) => {
-  return callAPI(HttpMethod.GET, `/contests/upcoming`, accessToken, undefined, {
-    isRegistered,
-  });
+  const params: any = {}; // Tạo một object chứa các tham số query
+
+  if (isRegistered !== undefined) {
+    params.isRegistered = isRegistered; // Thêm tham số isRegistered nếu có
+  }
+
+  return callAPI(HttpMethod.GET, `/contests/upcoming`, accessToken, undefined, params);
 };
 
 // Danh sách các cuộc thi sắp tới user đã đăng ký
