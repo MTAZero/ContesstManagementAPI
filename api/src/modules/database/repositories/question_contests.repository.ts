@@ -132,7 +132,7 @@ export class QuestionContestsRepository extends BaseDBService<QuestionContest> {
     page: number;
     offset: number;
   }> {
-    const { skip, limit, filter = {}, sort = { _id: 1 } } = query;
+    const { skip, limit, filter = {}, sort = { created_date: -1 } } = query;
 
     // Aggregate pipeline
     const pipeline: any[] = [

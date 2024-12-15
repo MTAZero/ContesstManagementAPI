@@ -12,13 +12,13 @@ export class UserContestRepository extends BaseDBService<UserContest> {
 
   async getItems(query: QueryParams): Promise<ResponseQuery<UserContest>> {
     let { sort, filter, skip, limit } = query;
-  
+
     // Default sorting if not provided
     sort = {
       ...sort,
       ...{ created_date: -1 },
     };
-  
+
     // Aggregate pipeline
     const pipeline: any[] = [
       {
@@ -89,10 +89,10 @@ export class UserContestRepository extends BaseDBService<UserContest> {
         $limit: limit, // Giới hạn số lượng bản ghi
       },
     ];
-  
+
     // Thực hiện pipeline
     const items = await this.entityModel.aggregate(pipeline).exec();
-  
+
     // Tính tổng số lượng bản ghi phù hợp filter
     const totalCountPipeline = [
       {
@@ -102,12 +102,14 @@ export class UserContestRepository extends BaseDBService<UserContest> {
         $count: "total",
       },
     ];
-  
-    const totalResult = await this.entityModel.aggregate(totalCountPipeline).exec();
+
+    const totalResult = await this.entityModel
+      .aggregate(totalCountPipeline)
+      .exec();
     const total = totalResult.length > 0 ? totalResult[0].total : 0;
-  
+
     const pageIndex = Math.floor(skip / limit) + 1;
-  
+
     return {
       items,
       total,

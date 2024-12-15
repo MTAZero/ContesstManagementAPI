@@ -32,7 +32,7 @@ export class QuestionsRepository extends BaseDBService<Question> {
     sort = {
       ...sort,
       ...{
-        _id: 1,
+        created_date: -1,
       },
     };
 

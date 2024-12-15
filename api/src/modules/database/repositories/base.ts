@@ -29,7 +29,7 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
     sort = {
       ...sort,
       ...{
-        _id: 1,
+        created_date: -1,
       },
     };
 
