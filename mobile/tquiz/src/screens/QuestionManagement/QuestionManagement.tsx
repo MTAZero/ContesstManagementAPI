@@ -10,10 +10,10 @@ import {
   Appbar,
   Button,
   Card,
-  Portal,
   Text,
   IconButton,
   FAB,
+  ActivityIndicator,
 } from "react-native-paper";
 import { useSelector } from "react-redux";
 import QuestionInfoModal from "./QuestionInfoModal";
@@ -27,9 +27,11 @@ const QuestionManagement = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [questionToEdit, setQuestionToEdit] = useState(null); // Question đang được chỉnh sửa
+  const [questionToEdit, setQuestionToEdit] = useState(null); // Câu hỏi đang chỉnh sửa
   const [loading, setLoading] = useState(false);
   const pageSize = 10;
+
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchQuestions();
@@ -41,7 +43,6 @@ const QuestionManagement = () => {
       return;
     }
     setLoading(true);
-
     try {
       const response = await questionAPIService.getQuestions(
         "",
@@ -58,7 +59,7 @@ const QuestionManagement = () => {
         console.error("Không có danh sách câu hỏi trong phản hồi");
       }
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách câu hỏi:", error);
+      console.error("Lỗi khi lấy danh sách câu hỏi:", error.message);
     } finally {
       setLoading(false);
     }
@@ -118,16 +119,11 @@ const QuestionManagement = () => {
     setQuestionToEdit(null); // Đặt chế độ "thêm mới"
     setModalVisible(true); // Hiển thị modal
   };
-  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction
-          onPress={() => {
-            navigation.goBack();
-          }}
-        />
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Quản Lý Câu Hỏi" />
       </Appbar.Header>
       <View style={styles.searchContainer}>
@@ -141,43 +137,57 @@ const QuestionManagement = () => {
           />
         </View>
       </View>
-      <FlatList
-        data={questions}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <Card style={styles.card}>
-            <View style={styles.cardContent}>
-              <Text style={styles.title}>Nội dung: {item.content}</Text>
-              <Text style={styles.category}>
-                Danh mục: {item.category_detail?.name || "Không rõ"}
-              </Text>
-              <Text style={styles.options}>
-                Lựa chọn:{" "}
-                {item.answers
-                  ?.map((answer) =>
-                    answer.is_correct
-                      ? `${answer.content} (Đúng)`
-                      : `${answer.content}`
-                  )
-                  .join(", ")}
-              </Text>
-            </View>
-            <Card.Actions style={styles.cardActions}>
-              <IconButton
-                icon="pencil"
-                size={16}
-                onPress={() => handleEditQuestion(item)}
-              />
-              <IconButton
-                icon="delete"
-                size={16}
-                onPress={() => handleDeleteQuestion(item._id)}
-                color="red"
-              />
-            </Card.Actions>
-          </Card>
-        )}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" style={styles.loadingIndicator} />
+      ) : (
+        <FlatList
+          data={questions}
+          keyExtractor={(item) => item._id}
+          renderItem={({ item }) => (
+            <Card style={styles.card}>
+              <View style={styles.cardContent}>
+                {/* Nội dung câu hỏi */}
+                <Text style={styles.title}>{item.content}</Text>
+                {/* Danh mục câu hỏi */}
+                <Text style={styles.category}>
+                  <Text style={styles.label}>Danh mục:</Text>{" "}
+                  {item.category_detail?.name || "Không rõ"}
+                </Text>
+                {/* Các lựa chọn */}
+                <View style={styles.optionsContainer}>
+                  <Text style={styles.label}>Lựa chọn:</Text>
+                  {item.answers.map((answer, index) => (
+                    <Text
+                      key={index}
+                      style={[
+                        styles.option,
+                        answer.is_correct && styles.correctOption,
+                      ]}
+                    >
+                      - {answer.content} {answer.is_correct ? "(Đúng)" : ""}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+              {/* Nút hành động */}
+              <Card.Actions style={styles.cardActions}>
+                <IconButton
+                  icon="pencil"
+                  size={20}
+                  onPress={() => handleEditQuestion(item)}
+                  color="#6A0DAD"
+                />
+                <IconButton
+                  icon="delete"
+                  size={20}
+                  onPress={() => handleDeleteQuestion(item._id)}
+                  color="red"
+                />
+              </Card.Actions>
+            </Card>
+          )}
+        />
+      )}
       <View style={styles.pagination}>
         <Button
           mode="text"
@@ -186,11 +196,9 @@ const QuestionManagement = () => {
         >
           Trang Trước
         </Button>
-
         <Text>
           Trang {page} / {totalPages}
         </Text>
-
         <Button
           mode="text"
           disabled={page === totalPages}
@@ -199,7 +207,6 @@ const QuestionManagement = () => {
           Trang Sau
         </Button>
       </View>
-      {/* Nút thêm câu hỏi */}
       <FAB
         icon="plus"
         style={styles.fab}
@@ -207,7 +214,6 @@ const QuestionManagement = () => {
         color="#fff"
         label="Thêm Câu Hỏi"
       />
-      {/* Modal thêm/sửa câu hỏi */}
       <QuestionInfoModal
         visible={modalVisible}
         onDismiss={() => setModalVisible(false)}
@@ -262,13 +268,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 4,
   },
-  options: {
+  optionsContainer: {
+    marginTop: 8,
+  },
+  label: {
     fontSize: 14,
-    marginBottom: 4,
+    fontWeight: "bold",
+    color: "#444",
+  },
+  option: {
+    fontSize: 14,
+    marginTop: 4,
+    color: "#333",
+  },
+  correctOption: {
+    color: "green",
+    fontWeight: "bold",
   },
   cardActions: {
-    padding: 0,
-    marginTop: -8,
     flexDirection: "row",
     justifyContent: "flex-end",
   },
@@ -284,6 +301,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 50,
     backgroundColor: "#6A0DAD",
+  },
+  loadingIndicator: {
+    marginTop: 20,
   },
 });
 
