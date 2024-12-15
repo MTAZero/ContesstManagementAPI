@@ -8,6 +8,7 @@ interface ContestInfoModalProps {
   onDismiss: () => void;
   onSubmit: (
     contest: {
+      _id: string | null;
       name: string;
       description: string;
       start_time: string;
@@ -16,6 +17,7 @@ interface ContestInfoModalProps {
     isEditing: boolean
   ) => void;
   contestToEdit?: {
+    _id: string | null;
     name: string;
     description: string;
     start_time: string;
@@ -30,6 +32,7 @@ const ContestInfoModal: React.FC<ContestInfoModalProps> = ({
   contestToEdit,
 }) => {
   const [contest, setContest] = useState({
+    _id: "",
     name: "",
     description: "",
     start_time: new Date(),
@@ -40,6 +43,7 @@ const ContestInfoModal: React.FC<ContestInfoModalProps> = ({
   useEffect(() => {
     if (contestToEdit) {
       setContest({
+        _id: contestToEdit?._id ? contestToEdit?._id : "",
         name: contestToEdit.name,
         description: contestToEdit.description,
         start_time: new Date(contestToEdit.start_time),
@@ -47,6 +51,7 @@ const ContestInfoModal: React.FC<ContestInfoModalProps> = ({
       });
     } else {
       setContest({
+        _id: null,
         name: "",
         description: "",
         start_time: new Date(),

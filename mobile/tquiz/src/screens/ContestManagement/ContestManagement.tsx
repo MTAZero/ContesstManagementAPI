@@ -63,6 +63,8 @@ const ContestManagement = () => {
   const handleSaveContest = async (contest: any, isEditing: boolean) => {
     if (!accessToken) return;
 
+    console.log("Saving contest:", contest, isEditing);
+
     try {
       if (isEditing) {
         await contestService.updateContest(contest._id, contest, accessToken);
