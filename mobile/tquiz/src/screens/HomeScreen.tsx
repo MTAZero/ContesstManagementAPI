@@ -129,6 +129,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
+  dashboard: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    padding: 16,
+  },
+  dashboardCard: {
+    width: "48%",
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    elevation: 2,
+  },
+  dashboardText: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "left",
+    marginBottom: 8,
+  },
+  dashboardValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+  },
   list: {
     padding: 16,
   },
@@ -182,3 +206,4 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+

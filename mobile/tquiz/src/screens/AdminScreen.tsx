@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Appbar, List } from "react-native-paper";
+import NavBar from "../components/NavBar";
 
 const AdminScreen = ({ navigation }: { navigation: any }) => {
   const handleNavigation = (destination: string) => {
@@ -56,6 +57,7 @@ const AdminScreen = ({ navigation }: { navigation: any }) => {
           </View>
         </List.Section>
       </View>
+      <NavBar navigation={navigation}/>
     </View>
   );
 };
