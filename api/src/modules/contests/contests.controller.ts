@@ -882,9 +882,7 @@ export class ContestsController {
 
       const contestData = contest.items[0];
       const startTime = new Date(contestData.start_time);
-      const endTime = new Date(
-        startTime.getTime() + contestData.duration * 60000
-      );
+      const endTime = new Date(contestData.end_time);
 
       // Kiểm tra thời gian: phải trong khoảng start_time -> end_time
       if (now < startTime) {

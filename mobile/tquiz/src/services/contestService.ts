@@ -204,7 +204,7 @@ const getLeaderboard = async (contestId: string, accessToken: string) => {
 // Danh sách các cuộc thi sắp tới
 const getUpcomingContests = async (
   accessToken: string,
-  isRegistered?: boolean | undefined,
+  isRegistered?: boolean | undefined
 ) => {
   const params: any = {}; // Tạo một object chứa các tham số query
 
@@ -212,7 +212,13 @@ const getUpcomingContests = async (
     params.isRegistered = isRegistered; // Thêm tham số isRegistered nếu có
   }
 
-  return callAPI(HttpMethod.GET, `/contests/upcoming`, accessToken, undefined, params);
+  return callAPI(
+    HttpMethod.GET,
+    `/contests/upcoming`,
+    accessToken,
+    undefined,
+    params
+  );
 };
 
 // Danh sách các cuộc thi sắp tới user đã đăng ký
@@ -253,6 +259,28 @@ const getCompletedContests = async (
   );
 };
 
+// Kết quả các cuộc thi đã hoàn thành
+const getUserContest = async (
+  accessToken: string,
+  pageSize: number = 10,
+  pageIndex: number = 1,
+  keyword: string = "",
+  status: string = "ALL"
+) => {
+  return callAPI(
+    HttpMethod.GET,
+    `/contests/user-contest`,
+    accessToken,
+    undefined,
+    {
+      pageSize,
+      pageIndex,
+      keyword,
+      status,
+    }
+  );
+};
+
 const contestService = {
   getContests,
   getContestById,
@@ -275,6 +303,7 @@ const contestService = {
   getUpcomingContests,
   getUpcomingRegisteredContests,
   getCompletedContests,
+  getUserContest,
 };
 
 export default contestService;

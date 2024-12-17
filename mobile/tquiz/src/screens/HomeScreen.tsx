@@ -6,13 +6,7 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import {
-  Text,
-  Button,
-  Appbar,
-  ActivityIndicator,
-  SegmentedButtons,
-} from "react-native-paper";
+import { Text, Button, Appbar, ActivityIndicator } from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../redux/store";
 import { logout } from "../redux/userSlice";
@@ -23,40 +17,34 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user.user);
   const [contests, setContests] = useState([]);
-  const [filteredContests, setFilteredContests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // Bộ lọc: "all", "upcoming", "registered"
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 10;
 
   useEffect(() => {
     fetchContests();
-  }, []);
-
-  useEffect(() => {
-    applyFilter();
-  }, [filter, contests]);
+  }, [filter, currentPage]);
 
   const fetchContests = async () => {
+    setLoading(true);
     try {
-      const response = await contestService.getUpcomingContests(accessToken);
-      setContests(response.data || []);
+      const response = await contestService.getUserContest(
+        accessToken,
+        pageSize,
+        currentPage,
+        "",
+        ""
+      );
+
+      setContests(response.data?.items || []);
+      setTotalPages(Math.ceil(response.data?.total / pageSize) || 1);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách cuộc thi:", error);
       Alert.alert("Lỗi", "Không thể tải danh sách cuộc thi.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const applyFilter = () => {
-    switch (filter) {
-      case "upcoming":
-        setFilteredContests(contests.filter((item: any) => item.canRegister));
-        break;
-      case "registered":
-        setFilteredContests(contests.filter((item: any) => item.isRegistered));
-        break;
-      default:
-        setFilteredContests(contests);
     }
   };
 
@@ -72,16 +60,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
       fetchContests();
     } catch (error) {
       Alert.alert("Lỗi", "Không thể đăng ký cuộc thi.");
-    }
-  };
-
-  const handleUnregister = async (contestId: string, contestName: string) => {
-    try {
-      await contestService.unregisterFromContest(contestId, accessToken);
-      Alert.alert("Thành công", `Bạn đã hủy đăng ký "${contestName}".`);
-      fetchContests();
-    } catch (error) {
-      Alert.alert("Lỗi", "Không thể hủy đăng ký cuộc thi.");
     }
   };
 
@@ -108,41 +86,50 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
       </View>
 
       <View style={styles.actionContainer}>
-        {item.canRegister ? (
-          item.isRegistered ? (
-            <View style={styles.buttonGroup}>
-              <Button
-                mode="contained"
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={() => handleUnregister(item._id, item.name)}
-              >
-                Hủy Đăng Ký
-              </Button>
-              <Button
-                mode="contained"
-                style={[styles.actionButton, styles.joinButton]}
-                onPress={() =>
-                  navigation.navigate("ContestExam", { contestId: item._id })
-                }
-              >
-                Tham Gia Thi
-              </Button>
-            </View>
+        {item.is_registered ? (
+          item.is_submitted ? (
+            <Text style={styles.statusText}>Đã Nộp Bài</Text>
           ) : (
             <Button
               mode="contained"
-              style={[styles.actionButton, styles.registerButton]}
-              onPress={() => handleRegister(item._id, item.name)}
+              style={[styles.actionButton, styles.joinButton]}
+              onPress={() =>
+                navigation.navigate("ContestExam", { contestId: item._id })
+              }
             >
-              Đăng Ký
+              Vào Thi
             </Button>
           )
         ) : (
-          <Text style={styles.registeredText}>
-            {item.isRegistered ? "Đã Đăng Ký" : "Không Thể Đăng Ký"}
-          </Text>
+          <Button
+            mode="contained"
+            style={[styles.actionButton, styles.registerButton]}
+            onPress={() => handleRegister(item._id, item.name)}
+          >
+            Đăng Ký
+          </Button>
         )}
       </View>
+    </View>
+  );
+
+  const renderPagination = () => (
+    <View style={styles.paginationContainer}>
+      <Button
+        disabled={currentPage === 1}
+        onPress={() => setCurrentPage((prev) => prev - 1)}
+      >
+        Trang Trước
+      </Button>
+      <Text style={styles.pageIndicator}>
+        {currentPage} / {totalPages}
+      </Text>
+      <Button
+        disabled={currentPage === totalPages}
+        onPress={() => setCurrentPage((prev) => prev + 1)}
+      >
+        Trang Sau
+      </Button>
     </View>
   );
 
@@ -152,7 +139,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
         styles.filterButton,
         filter === value && styles.filterButtonActive,
       ]}
-      onPress={() => handleFilterChange(value)}
+      onPress={() => setFilter(value)}
     >
       <Text
         style={[styles.filterText, filter === value && styles.filterTextActive]}
@@ -161,10 +148,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
       </Text>
     </TouchableOpacity>
   );
-
-  const handleFilterChange = (selectedFilter: string) => {
-    setFilter(selectedFilter);
-  };
 
   return (
     <View style={styles.container}>
@@ -183,7 +166,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
         </Button>
       )}
 
-      {/* Bộ lọc cuộc thi */}
+      {/* Bộ lọc */}
       <View style={styles.filterContainer}>
         {renderFilterButton("Tất Cả", "all")}
         {renderFilterButton("Sắp Diễn Ra", "upcoming")}
@@ -193,29 +176,23 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
       {loading ? (
         <ActivityIndicator size="large" style={styles.loading} />
       ) : (
-        <FlatList
-          data={filteredContests}
-          renderItem={renderContest}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.list}
-        />
+        <>
+          <FlatList
+            data={contests}
+            renderItem={renderContest}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={styles.list}
+          />
+          {renderPagination()}
+        </>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
-  list: {
-    padding: 16,
-  },
-  filterButtons: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-  },
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
+  list: { padding: 16 },
   contestContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -223,74 +200,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
   },
-  infoContainer: {
-    marginBottom: 10,
-  },
-  contestName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  contestDescription: {
-    fontSize: 14,
-    color: "#666",
-    marginVertical: 5,
-  },
-  contestTime: {
-    fontSize: 14,
-    color: "#666",
-  },
+  infoContainer: { marginBottom: 10 },
+  contestName: { fontSize: 18, fontWeight: "bold", color: "#333" },
+  contestDescription: { fontSize: 14, color: "#666", marginVertical: 5 },
+  contestTime: { fontSize: 14, color: "#666" },
   rankContainer: {
     marginBottom: 10,
     flexDirection: "row",
     justifyContent: "flex-end",
   },
-  actionContainer: {
-    display: "flex",
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 10,
-    width: "100%",
-  },
-  actionButton: {
-    flex: 1,
-    borderRadius: 24,
-    paddingVertical: 6,
-  },
-  registerButton: {
-    backgroundColor: "#6A0DAD",
-  },
-  cancelButton: {
-    backgroundColor: "#FF6347",
-  },
-  joinButton: {
-    backgroundColor: "#1E90FF",
-  },
-  rankButton: {
-    borderColor: "#FFD700",
-    borderWidth: 1,
-  },
-  registeredText: {
-    fontSize: 14,
-    color: "green",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  loading: {
-    marginTop: 20,
-  },
+  actionContainer: { marginTop: 10 },
+  actionButton: { borderRadius: 24, paddingVertical: 6 },
+  registerButton: { backgroundColor: "#6A0DAD" },
+  joinButton: { backgroundColor: "#1E90FF" },
+  rankButton: { borderColor: "#FFD700", borderWidth: 1 },
+  statusText: { fontSize: 14, color: "#999", fontWeight: "bold" },
   filterContainer: {
     flexDirection: "row",
+    justifyContent: "flex-start",
     gap: 10,
-    paddingHorizontal: 10,
-    margin: 10,
-    marginBottom: 0,
+    marginLeft: 15,
+    marginRight: 15,
+    paddingVertical: 10,
   },
   filterButton: {
     paddingVertical: 8,
@@ -298,17 +229,18 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#e0e0e0",
   },
-  filterButtonActive: {
-    backgroundColor: "#6A0DAD",
+  filterButtonActive: { backgroundColor: "#6A0DAD" },
+  filterText: { fontSize: 14, color: "#666" },
+  filterTextActive: { color: "#fff", fontWeight: "bold" },
+  loading: { marginTop: 20 },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 10,
+    gap: 20,
   },
-  filterText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  filterTextActive: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  pageIndicator: { fontSize: 16, fontWeight: "bold" },
   adminButton: {
     margin: 16,
     backgroundColor: "#6A0DAD",
