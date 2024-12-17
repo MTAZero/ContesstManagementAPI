@@ -15,7 +15,7 @@ interface UserInfoModalProps {
   onDismiss: () => void;
   onSubmit: (
     user: {
-      _id: string;
+      _id?: string;
       fullname: string;
       username: string;
       password?: string;
@@ -24,7 +24,7 @@ interface UserInfoModalProps {
     isEditing: boolean
   ) => void;
   userToEdit?: {
-    _id: string;
+    _id?: string;
     fullname: string;
     username: string;
     role: string;
@@ -37,7 +37,13 @@ const UseInfoModal: React.FC<UserInfoModalProps> = ({
   onSubmit,
   userToEdit,
 }) => {
-  const [user, setUser] = useState({
+  const [user, setUser] = useState<{
+    _id?: string;
+    fullname: string;
+    username: string;
+    password: string;
+    role: string;
+  }>({
     _id: "",
     fullname: "",
     username: "",
@@ -59,7 +65,6 @@ const UseInfoModal: React.FC<UserInfoModalProps> = ({
       setConfirmPassword(""); // Xóa confirm password khi chỉnh sửa
     } else {
       setUser({
-        _id: "",
         fullname: "",
         username: "",
         password: "",
