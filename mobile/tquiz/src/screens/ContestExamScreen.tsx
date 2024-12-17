@@ -26,18 +26,42 @@ const ContestExamScreen = ({
   navigation: any;
 }) => {
   const { accessToken } = useSelector((state: any) => state.user);
-  const { contestId } = route.params;
+  const { contestId, duration } = route.params; // duration (phút) được truyền vào
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const questionRefs = useRef<Array<View | null>>([]); // Ref cho từng câu hỏi
+  const questionRefs = useRef<Array<View | null>>([]);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [timeLeft, setTimeLeft] = useState(duration * 60); // Thời gian còn lại tính bằng giây
 
   useEffect(() => {
     fetchQuestions();
+    startCountdown(); // Bắt đầu đếm ngược thời gian
+    return () => clearInterval(timerRef.current); // Xóa timer khi unmount
   }, []);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startCountdown = () => {
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(timerRef.current!);
+          handleAutoSubmit(); // Hết giờ tự động nộp bài
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 1000);
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
 
   const fetchQuestions = async () => {
     try {
@@ -47,9 +71,8 @@ const ContestExamScreen = ({
       );
       const questionsData = response.data || [];
       const initialAnswers = questionsData.reduce((acc: any, question: any) => {
-        if (question.user_choice) {
+        if (question.user_choice)
           acc[question._id] = question.user_choice.answer;
-        }
         return acc;
       }, {});
       setQuestions(questionsData);
@@ -79,6 +102,11 @@ const ContestExamScreen = ({
     }
   };
 
+  const handleAutoSubmit = async () => {
+    Alert.alert("Hết thời gian", "Bài thi sẽ tự động nộp!");
+    await handleSubmitExam();
+  };
+
   const scrollToQuestion = (index: number) => {
     setModalVisible(false);
     questionRefs.current[index]?.measureLayout(
@@ -96,6 +124,7 @@ const ContestExamScreen = ({
       return;
     }
     try {
+      clearInterval(timerRef.current!); // Dừng đếm ngược
       await contestService.submitContest(contestId, accessToken);
       Alert.alert("Nộp bài thành công", "Bài thi của bạn đã được nộp.");
       navigation.goBack();
@@ -145,10 +174,12 @@ const ContestExamScreen = ({
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Bài Thi" />
+        {/* <Appbar.BackAction onPress={() => navigation.goBack()} /> */}
+        <Appbar.Content
+          title={<Text style={styles.timerText}>{formatTime(timeLeft)}</Text>}
+        />
         <Appbar.Action
-          icon="eye"
+          icon="format-list-numbered"
           onPress={() => setModalVisible(true)} // Mở modal
         />
       </Appbar.Header>
@@ -198,16 +229,13 @@ const ContestExamScreen = ({
             <Button
               mode="contained"
               onPress={handleSubmitExam}
-              style={[
-                styles.submitButton,
-                !allQuestionsAnswered && styles.submitButtonDisabled,
-              ]}
-              disabled={!allQuestionsAnswered}
+              style={styles.submitButton}
             >
               Nộp Bài
             </Button>
           </ScrollView>
 
+          {/* Modal danh sách câu hỏi */}
           <Portal>
             <Modal
               visible={modalVisible}
@@ -219,11 +247,7 @@ const ContestExamScreen = ({
               <Button
                 mode="contained"
                 onPress={handleSubmitExam}
-                style={[
-                  styles.submitButton,
-                  !allQuestionsAnswered && styles.submitButtonDisabled,
-                ]}
-                disabled={!allQuestionsAnswered}
+                style={styles.submitButton}
               >
                 Nộp Bài
               </Button>
@@ -241,9 +265,9 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   questionContainer: {
     marginBottom: 20,
+    padding: 10,
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
-    padding: 10,
   },
   questionText: { fontSize: 16, fontWeight: "bold", color: "#333" },
   optionContainer: {
@@ -254,13 +278,22 @@ const styles = StyleSheet.create({
   },
   optionSelected: { backgroundColor: "#f3e5f5" },
   optionText: { fontSize: 14, marginLeft: 8 },
-  submitButton: { marginTop: 20, backgroundColor: "#6A0DAD", borderRadius: 8 },
+  submitButton: {
+    marginTop: 5,
+    backgroundColor: "#6A0DAD",
+    borderRadius: 8,
+    color: "white",
+    marginBottom: 10,
+    padding: 10
+  },
   submitButtonDisabled: { backgroundColor: "#ccc" },
+  timerContainer: { alignItems: "center", marginTop: 10, marginBottom: 10 },
+  timerText: { fontSize: 18, fontWeight: "bold", color: "#d9534f" },
   modalContainer: {
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 8,
     marginHorizontal: 20,
+    borderRadius: 8,
   },
   modalTitle: {
     fontSize: 18,

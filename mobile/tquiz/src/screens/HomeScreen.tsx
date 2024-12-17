@@ -35,7 +35,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
         pageSize,
         currentPage,
         "",
-        ""
+        filter.toUpperCase()
       );
 
       setContests(response.data?.items || []);
@@ -63,55 +63,71 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
     }
   };
 
-  const renderContest = ({ item }: { item: any }) => (
-    <View style={styles.contestContainer}>
-      <View style={styles.infoContainer}>
-        <Text style={styles.contestName}>{item.name}</Text>
-        <Text style={styles.contestDescription}>{item.description}</Text>
-        <Text style={styles.contestTime}>
-          Bắt đầu: {new Date(item.start_time).toLocaleString()}
-        </Text>
-      </View>
+  const renderContest = ({ item }: { item: any }) => {
+    const currentTime = new Date();
 
-      <View style={styles.rankContainer}>
-        <Button
-          mode="outlined"
-          style={[styles.actionButton, styles.rankButton]}
-          onPress={() =>
-            navigation.navigate("ContestRanking", { contestId: item._id })
-          }
-        >
-          Xếp Hạng
-        </Button>
-      </View>
+    // Kiểm tra thời gian so với start_time
+    const isBeforeStartTime = new Date(item.start_time) > currentTime;
 
-      <View style={styles.actionContainer}>
-        {item.is_registered ? (
-          item.is_submitted ? (
-            <Text style={styles.statusText}>Đã Nộp Bài</Text>
-          ) : (
+    return (
+      <View style={styles.contestContainer}>
+        <View style={styles.infoContainer}>
+          <Text style={styles.contestName}>{item.name}</Text>
+          <Text style={styles.contestDescription}>{item.description}</Text>
+          <Text style={styles.contestTime}>
+            Bắt đầu: {new Date(item.start_time).toLocaleString()}
+          </Text>
+        </View>
+
+        {/* Nút Xếp Hạng */}
+        <View style={styles.rankContainer}>
+          <Button
+            mode="outlined"
+            style={[styles.actionButton, styles.rankButton]}
+            onPress={() =>
+              navigation.navigate("ContestRanking", { contestId: item._id })
+            }
+          >
+            Xếp Hạng
+          </Button>
+        </View>
+
+        {/* Hiển thị nút dựa vào thời gian */}
+        <View style={styles.actionContainer}>
+          {item.is_registered ? (
+            item.is_submitted ? (
+              <Text style={styles.statusText}>Đã Nộp Bài</Text>
+            ) : isBeforeStartTime ? (
+              <Text style={styles.statusText}>Chưa Đến Thời Gian Thi</Text>
+            ) : (
+              <Button
+                mode="contained"
+                style={[styles.actionButton, styles.joinButton]}
+                onPress={() =>
+                  navigation.navigate("ContestExam", {
+                    contestId: item._id,
+                    duration: item.duration,
+                  })
+                }
+              >
+                Vào Thi
+              </Button>
+            )
+          ) : isBeforeStartTime ? (
             <Button
               mode="contained"
-              style={[styles.actionButton, styles.joinButton]}
-              onPress={() =>
-                navigation.navigate("ContestExam", { contestId: item._id })
-              }
+              style={[styles.actionButton, styles.registerButton]}
+              onPress={() => handleRegister(item._id, item.name)}
             >
-              Vào Thi
+              Đăng Ký
             </Button>
-          )
-        ) : (
-          <Button
-            mode="contained"
-            style={[styles.actionButton, styles.registerButton]}
-            onPress={() => handleRegister(item._id, item.name)}
-          >
-            Đăng Ký
-          </Button>
-        )}
+          ) : (
+            <Text style={styles.statusText}>Hết Thời Gian Đăng Ký</Text>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderPagination = () => (
     <View style={styles.paginationContainer}>

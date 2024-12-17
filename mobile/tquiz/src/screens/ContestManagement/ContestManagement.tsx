@@ -6,15 +6,7 @@ import {
   Alert,
   TextInput as RNTextInput,
 } from "react-native";
-import {
-  Appbar,
-  Button,
-  Card,
-  Portal,
-  Text,
-  IconButton,
-  FAB,
-} from "react-native-paper";
+import { Appbar, Button, Text, IconButton, FAB } from "react-native-paper";
 import { useSelector } from "react-redux";
 import ContestInfoModal from "./ContestInfoModal";
 import contestService from "../../services/contestService";
@@ -29,7 +21,7 @@ const ContestManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [contestToEdit, setContestToEdit] = useState(null);
   const [loading, setLoading] = useState(false);
-  const pageSize = 5;
+  const pageSize = 4;
 
   useEffect(() => {
     fetchContests();
@@ -50,8 +42,6 @@ const ContestManagement = () => {
       if (data?.items) {
         setContests(data.items);
         setTotalPages(Math.ceil(data.total / pageSize));
-      } else {
-        console.error("Không có danh sách cuộc thi trong phản hồi");
       }
     } catch (error) {
       console.error("Lỗi khi lấy danh sách cuộc thi:", error.message);
@@ -62,8 +52,6 @@ const ContestManagement = () => {
 
   const handleSaveContest = async (contest: any, isEditing: boolean) => {
     if (!accessToken) return;
-
-    console.log("Saving contest:", contest, isEditing);
 
     try {
       if (isEditing) {
@@ -118,13 +106,11 @@ const ContestManagement = () => {
   return (
     <View style={styles.container}>
       <Appbar.Header>
-        <Appbar.BackAction
-          onPress={() => {
-            navigation.goBack();
-          }}
-        />
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Quản Lý Cuộc Thi" />
       </Appbar.Header>
+
+      {/* Tìm kiếm */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <IconButton icon="magnify" />
@@ -136,48 +122,55 @@ const ContestManagement = () => {
           />
         </View>
       </View>
+
+      {/* Danh sách cuộc thi */}
       <FlatList
         data={contests}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
-          <Card style={styles.card}>
-            <View style={styles.cardContent}>
-              <Text style={styles.name}>{item.name}</Text>
+          <View style={styles.contestContainer}>
+            <View style={styles.contestInfo}>
+              <Text style={styles.contestName}>{item.name}</Text>
               <Text style={styles.description}>{item.description}</Text>
               <Text style={styles.date}>
                 Bắt đầu: {new Date(item.start_time).toLocaleString()}
               </Text>
+              <Text style={styles.date}>
+                Kết thúc: {new Date(item.end_time).toLocaleString()}
+              </Text>
               <Text style={styles.duration}>
-                Thời gian: {item.duration} phút
+                Thời lượng: {item.duration} phút
               </Text>
             </View>
-            <Card.Actions style={styles.cardActions}>
+            <View style={styles.actionButtons}>
               <IconButton
                 icon="eye"
-                size={16}
-                onPress={() => {
+                size={20}
+                onPress={() =>
                   navigation.navigate("ContestDetail", {
                     contestId: item._id,
                     contestName: item.name,
-                  });
-                }}
+                  })
+                }
               />
               <IconButton
                 icon="pencil"
-                size={16}
+                size={20}
                 onPress={() => handleEditContest(item)}
                 color="#6A0DAD"
               />
               <IconButton
                 icon="delete"
-                size={16}
+                size={20}
                 onPress={() => handleDeleteContest(item._id)}
                 color="red"
               />
-            </Card.Actions>
-          </Card>
+            </View>
+          </View>
         )}
       />
+
+      {/* Phân trang */}
       <View style={styles.pagination}>
         <Button
           mode="text"
@@ -186,11 +179,9 @@ const ContestManagement = () => {
         >
           Trang Trước
         </Button>
-
         <Text>
           Trang {page} / {totalPages}
         </Text>
-
         <Button
           mode="text"
           disabled={page === totalPages}
@@ -199,6 +190,8 @@ const ContestManagement = () => {
           Trang Sau
         </Button>
       </View>
+
+      {/* Nút Thêm */}
       <FAB
         icon="plus"
         style={styles.fab}
@@ -206,6 +199,8 @@ const ContestManagement = () => {
         color="#fff"
         label="Thêm Cuộc Thi"
       />
+
+      {/* Modal */}
       <ContestInfoModal
         visible={modalVisible}
         onDismiss={() => setModalVisible(false)}
@@ -219,20 +214,20 @@ const ContestManagement = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f9f9f9",
   },
   searchContainer: {
     flexDirection: "row",
     padding: 16,
-    alignItems: "center",
     backgroundColor: "#f5f5f5",
   },
   searchInputContainer: {
     flexDirection: "row",
-    flex: 1,
     alignItems: "center",
+    flex: 1,
     borderWidth: 1,
     borderColor: "#ccc",
-    borderRadius: 4,
+    borderRadius: 8,
     backgroundColor: "#fff",
     paddingHorizontal: 8,
   },
@@ -240,38 +235,43 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
   },
-  card: {
-    margin: 4,
-    marginLeft: 16,
-    marginRight: 16,
-    borderRadius: 8,
+  contestContainer: {
     backgroundColor: "#fff",
-    padding: 8,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  cardContent: {
-    paddingBottom: 4,
+  contestInfo: {
+    flex: 1,
   },
-  name: {
-    fontSize: 16,
+  contestName: {
+    fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 4,
+    color: "#333",
+    marginBottom: 6,
   },
   description: {
     fontSize: 14,
-    marginBottom: 4,
+    color: "#666",
+    marginBottom: 6,
   },
   date: {
     fontSize: 14,
+    color: "#666",
     marginBottom: 4,
   },
   duration: {
     fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
   },
-  cardActions: {
-    padding: 0,
-    marginTop: -8,
+  actionButtons: {
     flexDirection: "row",
-    justifyContent: "flex-end",
   },
   pagination: {
     flexDirection: "row",
