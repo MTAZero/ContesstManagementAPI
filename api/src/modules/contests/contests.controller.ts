@@ -56,121 +56,102 @@ export class ContestsController {
   @Inject(UserRepository)
   usersRepository: UserRepository;
 
-  // kết quả các cuộc thi đã thi xong
-  @Get("/completed")
+  @Get("/user-contest")
   @UseGuards(JwtAuthGuard)
-  async getCompletedContests(@CurrentUser() user: any, @Res() res) {
+  async getContestsForUser(
+    @Res() res,
+    @Req() req,
+    @Query("status") status: string, // Lọc theo trạng thái
+    @Query("keyword") keyword: string // Tìm kiếm theo keyword
+  ) {
     try {
       const now = new Date();
+      const pagination: PaginationType = req.pagination; // Phân trang
+      const sort = req.sort || { start_time: -1 }; // Sắp xếp giảm dần theo start_time
 
-      // Lấy danh sách cuộc thi đã hoàn thành
-      const completedContests = await this.userContestRepository.getItems({
+      // Lấy tất cả cuộc thi user đã đăng ký
+      const userContests = await this.userContestRepository.getItems({
         skip: 0,
         limit: 1000,
-        filter: {
-          user: user._id,
-          is_submitted: true, // Đã nộp bài
-        },
-        sort: { created_date: -1 }, // Sắp xếp theo thời gian gần nhất
+        filter: { user: req.user._id },
       });
 
-      const contestIds = completedContests.items.map((item) => item.contest);
+      const contestIds = userContests.items.map((uc) => uc.contest);
 
-      // Lấy chi tiết các cuộc thi
-      const contests = await this.contestsRepository.getItems({
-        skip: 0,
-        limit: 1000,
-        filter: { _id: { $in: contestIds } }, // Đã kết thúc
-      });
-
-      const results = completedContests.items.map((entry) => ({
-        ...entry,
-        contest_detail: contests.items.find(
-          (contest) => contest._id.toString() === entry.contest.toString()
-        ),
-      }));
-
-      return ApiResponse(
-        res,
-        true,
-        ResponseCode.SUCCESS,
-        "Completed contests fetched successfully",
-        results
-      );
-    } catch (error) {
-      console.error("Error fetching completed contests:", error.message);
-      return ApiResponse(
-        res,
-        false,
-        ResponseCode.ERROR,
-        "Failed to fetch completed contests",
-        null
-      );
-    }
-  }
-
-  // lấy danh sách các cuộc thi sắp tới đã đăng ký
-  @Get("/upcoming-registered")
-  @UseGuards(JwtAuthGuard)
-  async getUpcomingRegisteredContests(@CurrentUser() user: any, @Res() res) {
-    try {
-      const now = new Date(); // Thời gian hiện tại
-      const oneWeekLater = new Date();
-      oneWeekLater.setDate(now.getDate() + 7); // Thời gian 1 tuần sau
-
-      // Tìm tất cả các cuộc thi đã đăng ký của user
-      const registeredContests = await this.userContestRepository.getItems({
-        skip: 0,
-        limit: 1000, // Lấy toàn bộ
-        filter: {
-          user: user._id,
-        },
-      });
-
-      // Lấy danh sách ID các cuộc thi đã đăng ký
-      const contestIds = registeredContests.items.map((item) => item.contest);
-
-      if (contestIds.length === 0) {
-        return ApiResponse(
-          res,
-          true,
-          ResponseCode.SUCCESS,
-          "No upcoming registered contests",
-          []
-        );
+      // Tạo bộ lọc dựa trên trạng thái và tìm kiếm
+      const filter: any = {};
+      if (status && status !== "ALL") {
+        if (status === "UPCOMING") {
+          filter.start_time = { $gt: now };
+        } else if (status === "REGISTERED") {
+          filter._id = { $in: contestIds };
+        } else if (status === "COMPLETED") {
+          filter._id = { $in: contestIds };
+          filter["user_contests.is_submitted"] = true;
+        } else if (status === "ENDED") {
+          filter.end_time = { $lt: now };
+        }
       }
 
-      // Chuyển contestIds thành danh sách ObjectId
-      const objectIds = contestIds.map((id) => new Types.ObjectId(id));
+      // Thêm tìm kiếm theo keyword
+      if (keyword) {
+        filter.$or = [
+          { name: { $regex: keyword, $options: "i" } }, // Tìm kiếm tên cuộc thi
+          { description: { $regex: keyword, $options: "i" } }, // Tìm kiếm mô tả
+        ];
+      }
 
-      // Lấy thông tin các cuộc thi sắp tới
-      const upcomingContests = await this.contestsRepository.getItems({
-        skip: 0,
-        limit: 1000, // Lấy toàn bộ
-        sort: { start_time: 1 }, // Sắp xếp theo thời gian tăng dần
-        filter: {
-          _id: { $in: objectIds },
-          start_time: { $gt: now, $lte: oneWeekLater }, // Chỉ lấy các cuộc thi bắt đầu sau thời gian hiện tại
-        },
+      // Lấy danh sách cuộc thi từ repository
+      const contests = await this.contestsRepository.getItems({
+        skip: pagination.skip,
+        limit: pagination.limit,
+        filter,
+        sort,
       });
 
+      // Tạo map kiểm tra trạng thái đã đăng ký và nộp bài
+      const userContestMap = new Map(
+        userContests.items.map((uc) => [uc.contest.toString(), uc])
+      );
+
+      // Xử lý kết quả trả về
+      const processedContests = contests.items.map((contest) => {
+        const userContest = userContestMap.get(contest._id.toString());
+        return {
+          ...contest,
+          is_registered: !!userContest,
+          is_submitted: userContest?.is_submitted || false,
+          status: userContest?.is_submitted
+            ? "COMPLETED"
+            : new Date(contest.start_time) > now
+              ? "UPCOMING"
+              : new Date(contest.end_time) < now
+                ? "ENDED"
+                : "REGISTERED",
+        };
+      });
+
+      // Trả về kết quả với phân trang
       return ApiResponse(
         res,
         true,
         ResponseCode.SUCCESS,
-        "Upcoming registered contests fetched successfully",
-        upcomingContests.items
+        "Contests fetched successfully",
+        {
+          items: processedContests,
+          total: contests.total,
+          size: pagination.limit,
+          page: Math.floor(pagination.skip / pagination.limit) + 1,
+          offset: pagination.skip,
+        }
       );
     } catch (error) {
-      console.error(
-        "Error fetching upcoming registered contests:",
-        error.message
-      );
+      console.error("Error fetching contests for user:", error.message);
       return ApiResponse(
         res,
         false,
         ResponseCode.ERROR,
-        "Failed to fetch upcoming registered contests",
+        "Failed to fetch contests for user",
         null
       );
     }
@@ -900,20 +881,23 @@ export class ContestsController {
       }
 
       const contestData = contest.items[0];
+      const startTime = new Date(contestData.start_time);
+      const endTime = new Date(
+        startTime.getTime() + contestData.duration * 60000
+      );
 
-      // Kiểm tra thời gian bắt đầu
-      // if (now < new Date(contestData.start_time)) {
-      //   return ApiResponse(
-      //     res,
-      //     false,
-      //     ResponseCode.FORBIDDEN,
-      //     "Contest has not started yet",
-      //     null
-      //   );
-      // }
+      // Kiểm tra thời gian: phải trong khoảng start_time -> end_time
+      if (now < startTime) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "Contest has not started yet",
+          null
+        );
+      }
 
-      // Kiểm tra thời gian kết thúc
-      if (now > new Date(contestData.end_time)) {
+      if (now > endTime) {
         return ApiResponse(
           res,
           false,
@@ -940,7 +924,26 @@ export class ContestsController {
         );
       }
 
-      // Lấy danh sách câu hỏi
+      const userContest = registration.items[0];
+
+      // Nếu đã có start_time, trả về thông báo đã bắt đầu thi
+      if (userContest.start_time) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "You have already started the contest",
+          null
+        );
+      }
+
+      // Cập nhật start_time nếu chưa có
+      await this.userContestRepository.updateItem(userContest._id, {
+        start_time: now,
+        last_update: Date.now(),
+      });
+
+      // Lấy danh sách câu hỏi của cuộc thi
       const questions =
         await this.questionContestsRepository.getQuestionsByContest(contestId);
 
@@ -1147,17 +1150,6 @@ export class ContestsController {
 
       const contestData = contest.items[0];
 
-      // Kiểm tra thời gian kết thúc
-      // if (now < new Date(contestData.end_time)) {
-      //   return ApiResponse(
-      //     res,
-      //     false,
-      //     ResponseCode.FORBIDDEN,
-      //     "You cannot submit before the contest ends",
-      //     null
-      //   );
-      // }
-
       // Lấy thông tin đăng ký của user
       const registration = await this.userContestRepository.getItems({
         skip: 0,
@@ -1188,6 +1180,22 @@ export class ContestsController {
         );
       }
 
+      // Kiểm tra thời gian nộp bài hợp lệ
+      const startTime = new Date(userRegistration.start_time);
+      const submissionDeadline = new Date(
+        startTime.getTime() + contestData.duration * 60000 + 2 * 60000
+      ); // Thêm 2 phút
+
+      if (now > submissionDeadline) {
+        return ApiResponse(
+          res,
+          false,
+          ResponseCode.FORBIDDEN,
+          "Submission time has expired",
+          null
+        );
+      }
+
       // Lấy câu trả lời của user
       const userChoices = await this.userChoiceRepository.getItems({
         skip: 0,
@@ -1213,10 +1221,11 @@ export class ContestsController {
         }
       }
 
-      // Cập nhật trạng thái nộp bài
+      // Cập nhật trạng thái nộp bài và kết quả
       await this.userContestRepository.updateItem(userRegistration._id, {
         is_submitted: true,
         result: score,
+        last_update: Date.now(),
       });
 
       return ApiResponse(

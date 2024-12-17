@@ -81,6 +81,12 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
 
   async updateItem(id: any, entity: any): Promise<any> {
     entity.last_update = new Date().getTime();
+
+    // Xóa trường _id nếu tồn tại trong dữ liệu cập nhật
+    if (entity._id) {
+      delete entity._id;
+    }
+
     await this.model
       .updateOne(
         {
@@ -90,7 +96,7 @@ export class BaseDBService<T extends Document> implements IBaseDBService<T> {
       )
       .exec();
 
-    return await this.model.findById(id);
+    return await this.model.findById(id).lean().exec();
   }
 
   async removeItem(id: any): Promise<boolean> {

@@ -1,7 +1,7 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
-import { User } from './users.schema';
-import { Contest } from './contests.schema';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Types } from "mongoose";
+import { User } from "./users.schema";
+import { Contest } from "./contests.schema";
 
 @Schema()
 export class UserContest extends Document<any> {
@@ -28,6 +28,10 @@ export class UserContest extends Document<any> {
   // Trạng thái nộp bài
   @Prop({ type: Boolean, default: false })
   is_submitted: boolean;
+
+  // Thời gian bắt đầu làm bài
+  @Prop({ type: Date })
+  start_time: Date;
 }
 
 export const UserContestSchema = SchemaFactory.createForClass(UserContest);

@@ -46,12 +46,3 @@ ContestSchema.index({
   status: 'text',
   duration: 'text'
 });
-  
-// Middleware tự động tính toán `end_time` trước khi lưu
-ContestSchema.pre('save', function (next) {
-  if (this.start_time && this.duration) {
-    this.end_time = new Date(this.start_time.getTime() + this.duration * 60000);
-  }
-  this.last_update = Date.now(); // Cập nhật thời gian chỉnh sửa cuối
-  next();
-});
