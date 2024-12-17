@@ -118,18 +118,26 @@ const ContestExamScreen = ({
   };
 
   const handleSubmitExam = async () => {
-    const unansweredQuestions = questions.filter((q: any) => !answers[q._id]);
-    if (unansweredQuestions.length > 0) {
-      Alert.alert("Chưa hoàn thành", "Vui lòng hoàn thành tất cả câu hỏi.");
-      return;
-    }
     try {
       clearInterval(timerRef.current!); // Dừng đếm ngược
-      await contestService.submitContest(contestId, accessToken);
-      Alert.alert("Nộp bài thành công", "Bài thi của bạn đã được nộp.");
-      navigation.goBack();
+      const response = await contestService.submitContest(
+        contestId,
+        accessToken
+      );
+
+      // Lấy số điểm từ response
+      const { score } = response.data;
+
+      Alert.alert(
+        "Nộp Bài Thành Công",
+        `Chúc mừng bạn đã đúng ${score}/${questions.length} câu hỏi!`,
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
     } catch (error) {
-      Alert.alert("Lỗi", "Có lỗi xảy ra khi nộp bài.");
+      console.error("Lỗi khi nộp bài:", error);
+      Alert.alert("Lỗi", "Có lỗi xảy ra khi nộp bài. Vui lòng thử lại!", [
+        { text: "Thoát", onPress: () => navigation.goBack() },
+      ]);
     }
   };
 
@@ -284,7 +292,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: "white",
     marginBottom: 10,
-    padding: 10
+    padding: 10,
   },
   submitButtonDisabled: { backgroundColor: "#ccc" },
   timerContainer: { alignItems: "center", marginTop: 10, marginBottom: 10 },

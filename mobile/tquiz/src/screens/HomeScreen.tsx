@@ -21,7 +21,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [filter, setFilter] = useState("all"); // Bộ lọc: "all", "upcoming", "registered"
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const pageSize = 10;
+  const pageSize = 4;
 
   useEffect(() => {
     fetchContests();
@@ -68,6 +68,7 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
 
     // Kiểm tra thời gian so với start_time
     const isBeforeStartTime = new Date(item.start_time) > currentTime;
+    const isEnded = new Date(item.end_time) < currentTime;
 
     return (
       <View style={styles.contestContainer}>
@@ -76,6 +77,9 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.contestDescription}>{item.description}</Text>
           <Text style={styles.contestTime}>
             Bắt đầu: {new Date(item.start_time).toLocaleString()}
+          </Text>
+          <Text style={styles.contestTime}>
+            Kết thúc: {new Date(item.end_time).toLocaleString()}
           </Text>
         </View>
 
@@ -92,37 +96,43 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
           </Button>
         </View>
 
-        {/* Hiển thị nút dựa vào thời gian */}
+        {/* Hiển thị nút Đăng Ký / Vào Thi */}
         <View style={styles.actionContainer}>
           {item.is_registered ? (
             item.is_submitted ? (
               <Text style={styles.statusText}>Đã Nộp Bài</Text>
-            ) : isBeforeStartTime ? (
-              <Text style={styles.statusText}>Chưa Đến Thời Gian Thi</Text>
+            ) : item.is_enter === false ? (
+              isBeforeStartTime ? (
+                <Text style={styles.statusText}>Chưa Đến Thời Gian Thi</Text>
+              ) : (
+                <Button
+                  mode="contained"
+                  style={[styles.actionButton, styles.joinButton]}
+                  onPress={() =>
+                    navigation.navigate("ContestExam", {
+                      contestId: item._id,
+                      duration: item.duration,
+                    })
+                  }
+                >
+                  Vào Thi
+                </Button>
+              )
             ) : (
+              <Text style={styles.statusText}>Đã hoàn thành</Text>
+            )
+          ) : isEnded ? (
+            <Text style={styles.statusText}>Đã Kết Thúc</Text>
+          ) : (
+            isBeforeStartTime && (
               <Button
                 mode="contained"
-                style={[styles.actionButton, styles.joinButton]}
-                onPress={() =>
-                  navigation.navigate("ContestExam", {
-                    contestId: item._id,
-                    duration: item.duration,
-                  })
-                }
+                style={[styles.actionButton, styles.registerButton]}
+                onPress={() => handleRegister(item._id, item.name)}
               >
-                Vào Thi
+                Đăng Ký
               </Button>
             )
-          ) : isBeforeStartTime ? (
-            <Button
-              mode="contained"
-              style={[styles.actionButton, styles.registerButton]}
-              onPress={() => handleRegister(item._id, item.name)}
-            >
-              Đăng Ký
-            </Button>
-          ) : (
-            <Text style={styles.statusText}>Hết Thời Gian Đăng Ký</Text>
           )}
         </View>
       </View>
@@ -185,7 +195,6 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
       {/* Bộ lọc */}
       <View style={styles.filterContainer}>
         {renderFilterButton("Tất Cả", "all")}
-        {renderFilterButton("Sắp Diễn Ra", "upcoming")}
         {renderFilterButton("Đã Đăng Ký", "registered")}
       </View>
 
@@ -223,13 +232,13 @@ const styles = StyleSheet.create({
   rankContainer: {
     marginBottom: 10,
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
   },
   actionContainer: { marginTop: 10 },
-  actionButton: { borderRadius: 24, paddingVertical: 6 },
+  actionButton: { paddingVertical: 1, borderRadius: 5 },
   registerButton: { backgroundColor: "#6A0DAD" },
-  joinButton: { backgroundColor: "#1E90FF" },
-  rankButton: { borderColor: "#FFD700", borderWidth: 1 },
+  joinButton: { backgroundColor: "#6A0DAD" },
+  rankButton: { borderColor: "#6A0DAD", borderWidth: 1, borderRadius: 5 },
   statusText: { fontSize: 14, color: "#999", fontWeight: "bold" },
   filterContainer: {
     flexDirection: "row",
@@ -237,12 +246,12 @@ const styles = StyleSheet.create({
     gap: 10,
     marginLeft: 15,
     marginRight: 15,
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   filterButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 20,
+    borderRadius: 5,
     backgroundColor: "#e0e0e0",
   },
   filterButtonActive: { backgroundColor: "#6A0DAD" },
@@ -260,6 +269,7 @@ const styles = StyleSheet.create({
   adminButton: {
     margin: 16,
     backgroundColor: "#6A0DAD",
+    borderRadius: 5,
   },
 });
 
