@@ -60,15 +60,10 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.logo}>TQuiz</Text>
-        <Image
-          source={require("../assets/quiz.png")}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        <Text style={styles.logo}>OnThiQuiz</Text>
         <TextInput
           mode="outlined"
-          label="Tên đăng nhập"
+          label="Username (user1)"
           value={username}
           onChangeText={setUsername}
           style={styles.input}
@@ -76,7 +71,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         />
         <TextInput
           mode="outlined"
-          label="Mật khẩu"
+          label="Password (123edcxz)"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -91,7 +86,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
           contentStyle={styles.buttonContent}
           labelStyle={{ color: isLoginEnabled ? "#FFFFFF" : "#A9A9A9" }}
         >
-          Đăng Nhập
+          Login
         </Button>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,1 +1,1 @@
-export const API_ENDPOINT = 'http://45.77.33.149:6868';
+export const API_ENDPOINT = 'https://api.onthiquiz.live';
