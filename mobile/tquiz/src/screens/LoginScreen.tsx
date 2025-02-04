@@ -63,7 +63,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         <Text style={styles.logo}>OnThiQuiz</Text>
         <TextInput
           mode="outlined"
-          label="Username (user1)"
+          label="Username"
           value={username}
           onChangeText={setUsername}
           style={styles.input}
@@ -71,7 +71,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         />
         <TextInput
           mode="outlined"
-          label="Password (123edcxz)"
+          label="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
