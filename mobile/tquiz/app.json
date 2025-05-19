@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "tquiz",
-    "slug": "tquiz",
+    "slug": "tquiz2",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,15 +20,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.zindousm.tquiz"
+      "package": "com.alex39962.tquiz"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "d13b7346-376f-4679-b431-acd97c0957f4"
+        "projectId": "af2f6463-9ec4-4b69-b2b5-7fbe0d13d03e"
       }
-    }
+    },
+    "owner": "zindousm"
   }
 }

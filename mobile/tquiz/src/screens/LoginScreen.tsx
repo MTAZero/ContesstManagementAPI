@@ -63,7 +63,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         <Text style={styles.logo}>OnThiQuiz</Text>
         <TextInput
           mode="outlined"
-          label="Username"
+          label="Tên đăng nhập"
           value={username}
           onChangeText={setUsername}
           style={styles.input}
@@ -71,7 +71,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         />
         <TextInput
           mode="outlined"
-          label="Password"
+          label="Mật khẩu"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -86,7 +86,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
           contentStyle={styles.buttonContent}
           labelStyle={{ color: isLoginEnabled ? "#FFFFFF" : "#A9A9A9" }}
         >
-          Login
+          Đăng nhập
         </Button>
       </ScrollView>
     </KeyboardAvoidingView>
