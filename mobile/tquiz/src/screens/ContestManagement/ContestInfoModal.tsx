@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableWithoutFeedback, Keyboard, ScrollView } from "react-native";
 import { Portal, Modal, Text, TextInput, Button } from "react-native-paper";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { format } from 'date-fns';
 
 interface ContestInfoModalProps {
   visible: boolean;
@@ -42,8 +43,8 @@ const ContestInfoModal: React.FC<ContestInfoModalProps> = ({
     duration: "",
   });
 
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [isStartDatePickerVisible, setStartDatePickerVisible] = useState(false);
+  const [isEndDatePickerVisible, setEndDatePickerVisible] = useState(false);
 
   useEffect(() => {
     if (contestToEdit) {
@@ -57,7 +58,7 @@ const ContestInfoModal: React.FC<ContestInfoModalProps> = ({
       });
     } else {
       setContest({
-        _id: null,
+        _id: "",
         name: "",
         description: "",
         start_time: new Date(),
@@ -89,99 +90,115 @@ const ContestInfoModal: React.FC<ContestInfoModalProps> = ({
     onDismiss();
   };
 
-  const handleDateChange = (
-    event: any,
-    selectedDate?: Date,
-    isStartDate: boolean = true
-  ) => {
-    if (isStartDate) {
-      setShowStartDatePicker(false);
-      if (selectedDate) {
-        setContest({ ...contest, start_time: selectedDate });
-      }
-    } else {
-      setShowEndDatePicker(false);
-      if (selectedDate) {
-        setContest({ ...contest, end_time: selectedDate });
-      }
-    }
+  const handleStartDateConfirm = (date: Date) => {
+    setStartDatePickerVisible(false);
+    setContest({ ...contest, start_time: date });
+  };
+
+  const handleEndDateConfirm = (date: Date) => {
+    setEndDatePickerVisible(false);
+    setContest({ ...contest, end_time: date });
+  };
+
+  const handleDismiss = () => {
+    Keyboard.dismiss();
+    onDismiss();
   };
 
   return (
     <Portal>
       <Modal
         visible={visible}
-        onDismiss={onDismiss}
+        onDismiss={handleDismiss}
         contentContainerStyle={styles.modal}
       >
-        <Text style={styles.modalTitle}>
-          {contestToEdit ? "Sửa Cuộc Thi" : "Thêm Cuộc Thi"}
-        </Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <Text style={styles.modalTitle}>
+              {contestToEdit ? "Sửa Cuộc Thi" : "Thêm Cuộc Thi"}
+            </Text>
 
-        <TextInput
-          label="Tên Cuộc Thi"
-          value={contest.name}
-          onChangeText={(text) => setContest({ ...contest, name: text })}
-          style={styles.input}
+            <TextInput
+              label="Tên Cuộc Thi"
+              value={contest.name}
+              onChangeText={(text) => setContest({ ...contest, name: text })}
+              style={styles.input}
+              mode="outlined"
+              returnKeyType="next"
+            />
+            <TextInput
+              label="Mô Tả"
+              value={contest.description}
+              onChangeText={(text) => setContest({ ...contest, description: text })}
+              style={styles.input}
+              mode="outlined"
+              multiline
+              numberOfLines={3}
+              returnKeyType="next"
+            />
+
+            <Text style={styles.label}>Thời Gian Bắt Đầu</Text>
+            <Button
+              mode="outlined"
+              onPress={() => setStartDatePickerVisible(true)}
+              style={styles.datePickerButton}
+              icon="calendar"
+            >
+              {format(contest.start_time, 'dd/MM/yyyy HH:mm')}
+            </Button>
+
+            <Text style={styles.label}>Thời Gian Kết Thúc</Text>
+            <Button
+              mode="outlined"
+              onPress={() => setEndDatePickerVisible(true)}
+              style={styles.datePickerButton}
+              icon="calendar"
+            >
+              {format(contest.end_time, 'dd/MM/yyyy HH:mm')}
+            </Button>
+
+            <TextInput
+              label="Thời Lượng (phút)"
+              value={contest.duration}
+              onChangeText={(text) => setContest({ ...contest, duration: text })}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="numeric"
+              placeholder="Nhập thời lượng (phút)"
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+            />
+
+            <View style={styles.modalActions}>
+              <Button mode="outlined" onPress={handleDismiss} style={styles.cancelButton}>
+                Hủy
+              </Button>
+              <Button mode="contained" onPress={handleSave} style={styles.saveButton}>
+                Lưu
+              </Button>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+
+        <DateTimePickerModal
+          isVisible={isStartDatePickerVisible}
+          mode="datetime"
+          onConfirm={handleStartDateConfirm}
+          onCancel={() => setStartDatePickerVisible(false)}
+          minimumDate={new Date()}
+          date={contest.start_time}
+          locale="vi"
         />
-        <TextInput
-          label="Mô Tả"
-          value={contest.description}
-          onChangeText={(text) => setContest({ ...contest, description: text })}
-          style={styles.input}
+
+        <DateTimePickerModal
+          isVisible={isEndDatePickerVisible}
+          mode="datetime"
+          onConfirm={handleEndDateConfirm}
+          onCancel={() => setEndDatePickerVisible(false)}
+          minimumDate={contest.start_time}
+          date={contest.end_time}
+          locale="vi"
         />
-
-        <Text style={styles.label}>Thời Gian Bắt Đầu</Text>
-        <Button
-          mode="outlined"
-          onPress={() => setShowStartDatePicker(true)}
-          style={styles.datePickerButton}
-        >
-          {contest.start_time.toLocaleString()}
-        </Button>
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={contest.start_time}
-            mode="datetime"
-            display="default"
-            onChange={(e, date) => handleDateChange(e, date, true)}
-          />
-        )}
-
-        <Text style={styles.label}>Thời Gian Kết Thúc</Text>
-        <Button
-          mode="outlined"
-          onPress={() => setShowEndDatePicker(true)}
-          style={styles.datePickerButton}
-        >
-          {contest.end_time.toLocaleString()}
-        </Button>
-        {showEndDatePicker && (
-          <DateTimePicker
-            value={contest.end_time}
-            mode="datetime"
-            display="default"
-            onChange={(e, date) => handleDateChange(e, date, false)}
-          />
-        )}
-
-        <TextInput
-          label="Thời Lượng (phút)"
-          value={contest.duration}
-          onChangeText={(text) => setContest({ ...contest, duration: text })}
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Nhập thời lượng (phút)"
-        />
-
-        <View style={styles.modalActions}>
-          <Button mode="text" onPress={onDismiss}>
-            Hủy
-          </Button>
-          <Button mode="contained" onPress={handleSave}>
-            Lưu
-          </Button>
-        </View>
       </Modal>
     </Portal>
   );
@@ -211,11 +228,21 @@ const styles = StyleSheet.create({
   datePickerButton: {
     marginBottom: 16,
     alignSelf: "flex-start",
+    borderColor: "#6A0DAD",
   },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 16,
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    borderColor: "#6A0DAD",
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: "#6A0DAD",
   },
 });
 

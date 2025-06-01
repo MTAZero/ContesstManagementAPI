@@ -52,13 +52,14 @@ const ContestManagement = () => {
 
   const handleSaveContest = async (contest: any, isEditing: boolean) => {
     if (!accessToken) return;
+    const {_id, ...rest} = contest;
 
     try {
       if (isEditing) {
-        await contestService.updateContest(contest._id, contest, accessToken);
+        await contestService.updateContest(contest._id, rest, accessToken);
         Alert.alert("Thành công", "Cuộc thi đã được cập nhật.");
       } else {
-        await contestService.insertContest(contest, accessToken);
+        await contestService.insertContest(rest, accessToken);
         Alert.alert("Thành công", "Cuộc thi đã được thêm.");
       }
       fetchContests();
